@@ -76,6 +76,8 @@ npx supabase functions deploy receipt-delete
 
 `cloudinary-url` returns a 10-minute Cloudinary private-download URL. Cloudinary's private-download endpoint uses an attachment response, so it downloads instead of rendering inline; the receipt viewer can use the fetched file for a local preview. The temporary link is a bearer URL and can be shared until it expires.
 
+Claim packs fetch that short-lived URL with browser CORS enabled, then embed the receipt bytes in the generated PDF. Cloudinary's private-download API responded with an allowed origin in a CORS preflight check; verify the deployed Cloudinary endpoint from the app's production origin if you change delivery settings. A failed fetch is shown in the app, and the item facts can still be downloaded by retrying after receipt access is restored.
+
 ## Offline OCR and PDF reading
 
 The app vendors the Tesseract worker, WebAssembly cores, English trained data, PDF.js worker, CMaps, standard fonts, and PDF decoders under `public/`. Their matching npm versions are recorded in `package.json` and `package-lock.json`; keep the bundled assets in sync when upgrading those packages. OCR and PDF.js are dynamically imported only when receipt reading starts, and OCR does not depend on a CDN or network download.

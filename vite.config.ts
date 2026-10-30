@@ -10,4 +10,8 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
+  build: {
+    // The font-embedded claim-pack generator is loaded only when a user downloads a claim pack.
+    chunkSizeWarningLimit: 1300,
+  },
 });

@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { copy } from '@/lib/copy';
 import { formatDateOnly, getCoverageProgress, getWarrantyStatus } from '@/lib/dates/warranty';
+import { formatMoney } from '@/lib/format/money';
 import { deleteReceipt, getTemporaryReceiptUrl, uploadReceipt } from '@/features/receipts/receipt-storage';
 import { validateReceiptFile } from '@/features/receipts/receipt-validation';
 import type { Database } from '@/lib/supabase/types';
@@ -44,24 +45,6 @@ function itemFormValues(item: Item): ItemFormInput {
     household_id: item.household_id,
     notes: item.notes ?? '',
   };
-}
-
-function itemAmount(item: Item) {
-  if (item.purchase_price === null) return copy.amountNotRecorded;
-  const amount = new Intl.NumberFormat(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(item.purchase_price);
-  if (!item.currency) return amount;
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: item.currency,
-      currencyDisplay: 'symbol',
-    }).format(item.purchase_price);
-  } catch {
-    return `${item.currency} ${amount}`;
-  }
 }
 
 function statusLabel(item: Item) {
@@ -203,7 +186,7 @@ function ItemLink({ item, selected }: { item: Item; selected: boolean }) {
       <ReceiptSlip
         name={item.name}
         brand={item.brand ?? item.merchant ?? copy.noBrand}
-        amount={itemAmount(item)}
+        amount={formatMoney(item.purchase_price, item.currency)}
         status={status}
         statusLabel={statusLabel(item)}
       />
@@ -219,6 +202,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isReplacing, setIsReplacing] = useState(false);
+  const [isGeneratingClaimPack, setIsGeneratingClaimPack] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const status = getWarrantyStatus(item.expiry_date);
   const progress = getCoverageProgress(item.purchase_date, item.expiry_date);
@@ -326,6 +310,26 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
     return value?.trim() || copy.notRecorded;
   }
 
+  async function generateClaimPack() {
+    setIsGeneratingClaimPack(true);
+    try {
+      const { createClaimPack, downloadClaimPack, fetchClaimPackReceipt } =
+        await import('@/features/claim/claim-pack');
+      const receiptBytes = item.receipt_public_id
+        ? await fetchClaimPackReceipt(item.id)
+        : undefined;
+      const bytes = await createClaimPack(item, receiptBytes);
+      downloadClaimPack(item, bytes);
+      toast.success(copy.claimPackDownloaded);
+    } catch (error) {
+      toast.error(copy.claimPackGenerationError, {
+        description: error instanceof Error ? error.message : undefined,
+      });
+    } finally {
+      setIsGeneratingClaimPack(false);
+    }
+  }
+
   return (
     <article className="item-detail">
       <div className="item-detail-mobile-back">
@@ -375,9 +379,11 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
       <Button
         type="button"
         className="claim-pack-button"
-        onClick={() => toast.info(copy.claimPackComingSoon)}
+        disabled={isGeneratingClaimPack}
+        onClick={() => { void generateClaimPack(); }}
       >
-        <ArrowDownToLine aria-hidden="true" />{copy.claimPackDownload}
+        <ArrowDownToLine aria-hidden="true" />
+        {isGeneratingClaimPack ? copy.claimPackGenerating : copy.claimPackDownload}
       </Button>
 
       <div className="item-detail-actions">
@@ -418,7 +424,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
           <Fact label={copy.itemMerchant} value={showValue(item.merchant)} />
           <Fact label={copy.itemSerialNumber} value={showValue(item.serial_number)} mono />
           <Fact label={copy.itemPurchaseDate} value={formatDateOnly(item.purchase_date) ?? copy.notRecorded} mono />
-          <Fact label={copy.itemPurchasePrice} value={itemAmount(item)} mono />
+          <Fact label={copy.itemPurchasePrice} value={formatMoney(item.purchase_price, item.currency)} mono />
           <Fact
             label={copy.itemWarrantyLength}
             value={item.warranty_months === null ? copy.notRecorded : copy.warrantyMonthsValue(item.warranty_months)}
