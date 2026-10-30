@@ -17,14 +17,27 @@ Use the project's current **publishable** key from API Keys, not a secret/servic
 
 The root `.env.example` contains public frontend values only. Never put Brevo, Cloudinary, Supabase secret, or database credentials in it.
 
+## Vercel deployment
+
+Import the repository into Vercel with the repository root as the project root. Use the Vite defaults: `npm run build` and `dist`. The root `vercel.json` rewrites app routes to `index.html`, so direct navigation and refreshes on paths such as `/items/<id>` continue to work. Add these environment variables for Production, Preview, and Development as needed:
+
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+
+Set them from the Supabase project's API settings. They are public browser configuration; do not add service-role keys, database passwords, Brevo keys, or Cloudinary secrets as `VITE_` variables. Add server-side secrets under Supabase Edge Function Secrets as described below, not in Vercel's browser build environment.
+
 ## Google sign-in and redirect URLs
 
 1. In Supabase Dashboard, open Authentication → Sign In / Providers → Google and enable the provider.
 2. Add the Google OAuth client ID and client secret from your Google Cloud OAuth client. In Google Cloud, add the Supabase project's callback URL shown by the provider setup as an authorized redirect URI.
-3. In Authentication → URL Configuration, set the production Site URL and allow the app callback URLs, including `http://localhost:5173/`, `http://localhost:5173/auth/reset`, and the corresponding production origin paths. Add each preview origin explicitly when using preview deployments.
-4. Keep email confirmation enabled under the Email provider. For sign-up, users must confirm before they can accept an invite; password reset returns to `/auth/reset`.
+3. In Authentication → URL Configuration, set the production Site URL to the production Vercel domain and allow the production app paths, including `/` and `/auth/reset`. Add `http://localhost:5173/**` for local development.
+4. To support Vercel Preview deployments, allow `https://*-<team-or-account-slug>.vercel.app/**`, replacing the suffix with the actual team or account slug used by the deployment. Supabase uses `*` only within a single URL segment; use `**` to include nested paths. If previews use a custom domain or a different suffix, add the matching exact URL or pattern. Avoid broad patterns that match domains you do not control.
+5. Add the native custom-scheme redirects listed in [MOBILE.md](./MOBILE.md) when enabling Android/iOS builds.
+6. Keep email confirmation enabled under the Email provider. For sign-up, users must confirm before they can accept an invite; password reset returns to `/auth/reset`.
 
 The app uses Supabase Auth's PKCE flow for password and Google sign-in. Google sign-in will report an error until the provider and allowed redirect URLs are configured.
+
+The GitHub Actions workflow runs typecheck, lint, Vitest, production build, and local Supabase database tests on pushes and pull requests. A hosted Vercel preview is created by the Vercel Git integration; configure the matching preview URL pattern in Supabase before testing auth from those previews.
 
 ## Household invitation email
 
