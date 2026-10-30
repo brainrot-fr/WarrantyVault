@@ -18,4 +18,5 @@
 - `npm run lint` — run ESLint.
 - `npm test` — run the Vitest suite.
 - `npm run build` — create the production build.
+- `npm run db:test` — run Supabase pgTAP database tests (requires local Supabase services).
 - Phase gate: `npm run typecheck && npm run lint && npm test && npm run build`.
