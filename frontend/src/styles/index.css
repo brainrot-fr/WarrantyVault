@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-foreground);
+  }
+}
+
+@layer components {
+  .ambient-blob {
+    position: absolute;
+    display: block;
+    border-radius: 9999px;
+    filter: blur(var(--ambient-blur));
+  }
+
+  .ambient-blob-gold {
+    top: 10%;
+    left: -9rem;
+    width: 22rem;
+    height: 22rem;
+    background: var(--ambient-gold);
+  }
+
+  .ambient-blob-stone {
+    top: 33%;
+    right: -10rem;
+    width: 26rem;
+    height: 26rem;
+    background: var(--ambient-stone);
+  }
+
+  .ambient-blob-gold-secondary {
+    bottom: 4%;
+    left: 34%;
+    width: 20rem;
+    height: 20rem;
+    background: var(--ambient-gold);
+  }
+
+  .page-shell {
+    position: relative;
+    z-index: 1;
+    width: min(100% - 2rem, 1200px);
+    margin-inline: auto;
+    padding-block: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .page-heading {
+    margin-bottom: 2rem;
+    max-width: 48rem;
+  }
+
+  .page-heading h1 {
+    margin-top: 0.75rem;
+    font-family: Cormorant, Georgia, serif;
+    font-size: clamp(2.75rem, 6vw, 4rem);
+    font-weight: 600;
+    line-height: 0.98;
+  }
+
+  .page-heading > p:last-child {
+    margin-top: 1rem;
+    color: var(--color-muted-foreground);
+  }
+
+  .eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: var(--color-accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .eyebrow-dot {
+    width: 0.45rem;
+    height: 0.45rem;
+    flex: 0 0 auto;
+    border-radius: 9999px;
+    background: var(--color-accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 14%, transparent);
+  }
+
+  .glass-surface {
+    border: 1px solid var(--glass-border);
+    background: var(--glass-bg);
+    box-shadow: var(--glass-highlight), var(--glass-shadow);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  }
+
+  .glass-navbar {
+    border-bottom: 1px solid var(--glass-navbar-border);
+    background: var(--glass-navbar-bg);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  }
+
+  .glass-modal-backdrop {
+    background: var(--modal-overlay);
+    -webkit-backdrop-filter: blur(var(--modal-blur));
+    backdrop-filter: blur(var(--modal-blur));
+  }
+
+  @media (max-width: 400px) {
+    .page-shell {
+      width: min(100% - 1.5rem, 1200px);
+    }
+  }
+
+  .glass-input {
+    border: 1px solid var(--color-border);
+    background: var(--glass-bg);
+    box-shadow: var(--input-highlight);
+    transition: border-color var(--motion-duration) ease, box-shadow var(--motion-duration) ease;
+  }
+
+  .glass-input:focus {
+    border-color: var(--color-accent);
+    box-shadow: var(--focus-shadow);
+    outline: none;
+  }
+
+  .warning-notice {
+    border: 1px solid color-mix(in srgb, var(--status-expiring-text) 25%, transparent);
+    background: var(--status-expiring-bg);
+    color: var(--status-expiring-text);
+  }
+}
+
+.status-active {
+  color: var(--status-active-text);
+  background: var(--status-active-bg);
+}
+
+.button-primary {
+  color: var(--color-on-accent);
+}
+
+.button-danger {
+  color: var(--color-on-destructive);
+}
+
+.logo-mark {
+  color: var(--color-on-primary);
+}
+
+.status-expiring {
+  color: var(--status-expiring-text);
+  background: var(--status-expiring-bg);
+}
+
+.status-expired {
+  color: var(--status-expired-text);
+  background: var(--status-expired-bg);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .glass-surface,
+  .glass-input,
+  .glass-navbar,
+  .glass-modal-backdrop {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-surface,
+  .glass-input {
+    box-shadow: var(--shadow-md);
+  }
+}

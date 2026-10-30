@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/target/
+**/node_modules/
+**/dist/
+*.log
+.DS_Store
+ui-ux-pro-max-skill

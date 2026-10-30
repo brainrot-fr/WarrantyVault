@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: ${SUPABASE_DB_URL:jdbc:h2:mem:warrantyvault;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1}
+    username: ${SUPABASE_DB_USERNAME:sa}
+    password: ${SUPABASE_DB_PASSWORD:}
+app:
+  scheduler:
+    enabled: ${SCHEDULER_ENABLED:false}
