@@ -1,5 +1,37 @@
 # Supabase setup
 
+This is the authoritative setup guide for the current React + Supabase +
+Cloudinary + Capacitor application. The old Spring/Render deployment and its
+SMTP workflow were removed after the parity matrix was completed.
+
+## Prerequisites and local development
+
+Install Node.js and npm, Docker Desktop (required for local Supabase database
+tests), and the Supabase CLI. Android Studio is required for Android builds;
+Xcode and macOS are required for iOS builds.
+
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
+
+The frontend reads only `VITE_SUPABASE_URL` and
+`VITE_SUPABASE_PUBLISHABLE_KEY` from `.env.local`. Run the app gate before
+deployment:
+
+```bash
+npm run typecheck && npm run lint && npm test && npm run build
+```
+
+With Docker running, run the database policy tests:
+
+```bash
+npx supabase start
+npm run db:test
+npx supabase stop --no-backup
+```
+
 ## Email confirmation
 
 Keep **Confirm email** enabled on the hosted project. The invite-accept RPC requires a verified email that matches the invite. In the Supabase Dashboard, check Authentication → Sign In / Providers → Email. Local development enables confirmations in `supabase/config.toml`.
