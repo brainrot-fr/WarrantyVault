@@ -1,27 +1,26 @@
 # WarrantyVault
 
-WarrantyVault keeps purchase receipts, warranty dates, expiry reminders, and household item records together. Upload a JPG, PNG, or PDF receipt, review the OCR prefill, and generate a claim-pack PDF when service is needed.
+WarrantyVault is a household receipt and warranty drawer built with React, Vite,
+TypeScript, Supabase, Cloudinary, and Capacitor.
 
-## Repository layout
+## Start here
 
-- `backend/` — Java 21, Spring Boot REST API, Supabase Postgres/Storage integration, OCR, email reminders, and claim-pack generation.
-- `frontend/` — React + Vite app with Supabase Auth and a responsive glass UI.
-- `design-system/warrantyvault/` — committed UI design source of truth.
-- `design/DESIGN_NOTES.md` — design decisions used by the frontend.
-- `INSTRUCTIONS.md` — beginner-friendly Supabase, OAuth, SMTP, local run, and deployment guide.
+Read [docs/SETUP.md](./docs/SETUP.md) for prerequisites, local development,
+Supabase/Cloudinary/Brevo configuration, Vercel deployment, native app setup,
+and troubleshooting.
 
-## Quick start
+```bash
+npm install
+cp .env.example .env.local
+npm run dev
+```
 
-1. Follow [INSTRUCTIONS.md](./INSTRUCTIONS.md) to create the Supabase project and configure SMTP.
-2. Copy and fill in `backend/.env.example` and `frontend/.env.example`.
-3. Start the API with `cd backend && mvn spring-boot:run -Dspring-boot.run.profiles=local`.
-4. Start the UI with `cd frontend && npm install && npm run dev`.
+Run the application gate with:
 
-The backend listens on port `8080`; Vite serves the frontend at `http://localhost:5173`. Do not put the Supabase service-role key in the frontend.
+```bash
+npm run typecheck && npm run lint && npm test && npm run build
+```
 
-## Validation
-
-- Backend: `cd backend && mvn test`
-- Frontend: `cd frontend && npm ci && npm run build`
-
-See [INSTRUCTIONS.md](./INSTRUCTIONS.md) for environment-variable values, Google login setup, reminders, troubleshooting, and deployment details.
+The parity record is in [docs/PARITY.md](./docs/PARITY.md). Mobile-specific
+instructions are in [docs/MOBILE.md](./docs/MOBILE.md), and reminder operations
+are in [docs/OPERATIONS.md](./docs/OPERATIONS.md).
