@@ -9,23 +9,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/app/auth-context';
+import {
+  allHouseholdsValue,
+  persistHouseholdSelection,
+  readHouseholdSelection,
+  subscribeToHouseholdSelection,
+} from '@/app/household-selection';
 import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
-
-const householdStorageKey = 'warrantyvault-household';
-const allHouseholdsValue = 'all';
 
 export function AppShell() {
   const { user } = useAuth();
   const location = useLocation();
-  const [selectedHouseholdId, setSelectedHouseholdId] = useState<string>(() => {
-    try {
-      return window.localStorage.getItem(householdStorageKey) ?? allHouseholdsValue;
-    } catch (error) {
-      console.error(copy.householdPreferenceReadError, error);
-      return allHouseholdsValue;
-    }
-  });
+  const [selectedHouseholdId, setSelectedHouseholdId] = useState(readHouseholdSelection);
   const householdsQuery = useQuery({
     queryKey: ['households', user?.id],
     enabled: Boolean(user),
@@ -40,6 +36,23 @@ export function AppShell() {
       return data;
     },
   });
+  const normalizedEmail = user?.email?.trim().toLowerCase();
+  const addressedInvitesQuery = useQuery({
+    queryKey: ['addressed-invites', normalizedEmail],
+    enabled: Boolean(normalizedEmail),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('household_invites')
+        .select('id')
+        .eq('email', normalizedEmail!)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString());
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  useEffect(() => subscribeToHouseholdSelection(setSelectedHouseholdId), []);
 
   useEffect(() => {
     if (householdsQuery.isError) {
@@ -51,6 +64,16 @@ export function AppShell() {
     }
   }, [householdsQuery.error, householdsQuery.isError]);
 
+  useEffect(() => {
+    if (addressedInvitesQuery.isError) {
+      toast.error(copy.inviteListError, {
+        description: addressedInvitesQuery.error instanceof Error
+          ? addressedInvitesQuery.error.message
+          : String(addressedInvitesQuery.error),
+      });
+    }
+  }, [addressedInvitesQuery.error, addressedInvitesQuery.isError]);
+
   const isSelectedHouseholdAvailable = selectedHouseholdId === allHouseholdsValue
     || !householdsQuery.data
     || householdsQuery.data.some((household) => household.id === selectedHouseholdId);
@@ -61,7 +84,7 @@ export function AppShell() {
   useEffect(() => {
     if (!isSelectedHouseholdAvailable && selectedHouseholdId !== allHouseholdsValue) {
       try {
-        window.localStorage.removeItem(householdStorageKey);
+        persistHouseholdSelection(allHouseholdsValue);
       } catch (error) {
         toast.error(copy.householdPreferenceWriteError, {
           description: error instanceof Error ? error.message : String(error),
@@ -73,11 +96,7 @@ export function AppShell() {
   function changeHousehold(value: string) {
     setSelectedHouseholdId(value);
     try {
-      if (value === allHouseholdsValue) {
-        window.localStorage.removeItem(householdStorageKey);
-      } else {
-        window.localStorage.setItem(householdStorageKey, value);
-      }
+      persistHouseholdSelection(value);
     } catch (error) {
       toast.error(copy.householdPreferenceWriteError, {
         description: error instanceof Error ? error.message : String(error),
@@ -137,6 +156,13 @@ export function AppShell() {
       </aside>
 
       <main className="app-content" key={location.pathname}>
+        {location.pathname === '/'
+          && addressedInvitesQuery.data
+          && addressedInvitesQuery.data.length > 0 && (
+            <Link className="pending-invites-banner" to="/invites">
+              {copy.pendingInviteBanner(addressedInvitesQuery.data.length)}
+            </Link>
+          )}
         <Outlet />
       </main>
 

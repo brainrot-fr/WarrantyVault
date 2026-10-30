@@ -641,6 +641,163 @@ select {
   gap: 12px;
 }
 
+.household-page {
+  display: grid;
+  gap: 20px;
+}
+
+.household-page > .app-section-label,
+.household-page > h1,
+.household-page > p {
+  margin: 0;
+}
+
+.household-create-form,
+.household-invite-form {
+  display: grid;
+  gap: 8px;
+}
+
+.household-create-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.household-create-form > .auth-field-error,
+.household-invite-form > .auth-field-error {
+  margin: 0;
+}
+
+.household-list {
+  display: grid;
+  gap: 16px;
+}
+
+.household-card {
+  display: grid;
+  gap: 18px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.household-card-header,
+.household-card-footer,
+.household-person-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.household-card-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.household-card-header p,
+.household-empty-state p,
+.invite-card > p {
+  margin: 4px 0 0;
+  color: var(--muted-foreground);
+}
+
+.household-section {
+  display: grid;
+  gap: 12px;
+}
+
+.household-section h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.household-people {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.household-people > li {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.household-people > li:first-child {
+  padding-top: 0;
+}
+
+.household-people > li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.household-people > li > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.household-people > li strong,
+.household-people > li span {
+  overflow-wrap: anywhere;
+}
+
+.household-people > li span {
+  color: var(--muted-foreground);
+  font-size: 13px;
+}
+
+.household-person-actions {
+  flex-shrink: 0;
+}
+
+.household-card-footer {
+  justify-content: flex-end;
+}
+
+.household-empty-state {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+  padding-block: 12px;
+}
+
+.pending-invites-banner {
+  display: block;
+  margin: 0 auto 24px;
+  padding: 14px 16px;
+  border: 1px solid var(--carbon);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  background: var(--card);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.invite-card {
+  gap: 12px;
+}
+
+.invite-card .household-card-header {
+  margin-bottom: 4px;
+}
+
+.invite-card .household-card-footer {
+  justify-content: flex-end;
+}
+
 @media (max-width: 1023px) {
   .app-rail {
     display: none;
@@ -685,7 +842,8 @@ select {
   }
 
   .household-switcher {
-    max-width: min(52vw, 220px);
+    width: min(220px, max(114px, calc(100vw - 206px)));
+    max-width: 220px;
   }
 
   .app-topbar {
@@ -699,6 +857,20 @@ select {
 
   .auth-card h1 {
     font-size: 25px;
+  }
+
+  .household-create-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .household-people > li {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .household-person-actions {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

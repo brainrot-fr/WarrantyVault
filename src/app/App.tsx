@@ -29,8 +29,11 @@ const DrawerHome = lazy(() => import('@/app/AppShell').then((module) => ({
 const AddItemPlaceholder = lazy(() => import('@/app/AppShell').then((module) => ({
   default: () => <module.ShellPlaceholder title={copy.addItem} description={copy.addItemComingSoon} />,
 })));
-const HouseholdPlaceholder = lazy(() => import('@/app/AppShell').then((module) => ({
-  default: () => <module.ShellPlaceholder title={copy.household} description={copy.householdComingSoon} />,
+const HouseholdPage = lazy(() => import('@/features/households/HouseholdPage').then((module) => ({
+  default: module.HouseholdPage,
+})));
+const InvitesPage = lazy(() => import('@/features/households/InvitesPage').then((module) => ({
+  default: module.InvitesPage,
 })));
 const SettingsPage = lazy(() => import('./SettingsPage').then((module) => ({
   default: module.SettingsPage,
@@ -98,7 +101,8 @@ export function App() {
             <Route element={<Suspense fallback={<RouteLoading />}><AppShell /></Suspense>}>
               <Route index element={<Suspense fallback={<RouteLoading />}><DrawerHome /></Suspense>} />
               <Route path="items/new" element={<Suspense fallback={<RouteLoading />}><AddItemPlaceholder /></Suspense>} />
-              <Route path="household" element={<Suspense fallback={<RouteLoading />}><HouseholdPlaceholder /></Suspense>} />
+              <Route path="household" element={<Suspense fallback={<RouteLoading />}><HouseholdPage /></Suspense>} />
+              <Route path="invites" element={<Suspense fallback={<RouteLoading />}><InvitesPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<RouteLoading />}><SettingsPage /></Suspense>} />
               <Route path="*" element={<NotFound />} />
             </Route>

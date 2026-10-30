@@ -24,6 +24,40 @@ Use the project's current **publishable** key from API Keys, not a secret/servic
 
 The app uses Supabase Auth's PKCE flow for password and Google sign-in. Google sign-in will report an error until the provider and allowed redirect URLs are configured.
 
+## Household invitation email
+
+The `invite-member` Edge Function verifies the caller's session and household membership through an RLS-scoped client, creates or reuses a pending email-bound invite, and sends a transactional email through Brevo's HTTPS API. Resending reuses an active invite; an expired pending invite is replaced using the configured database expiry. It does not expose a link token or use SMTP from the Edge Function. The function requires a verified signed-in email to accept an invitation.
+
+Configure these values as Supabase Edge Function secrets (Dashboard → Edge Functions → Secrets), or in the ignored `supabase/functions/.env.local` file for local function development:
+
+- `BREVO_API_KEY`
+- `MAIL_FROM_EMAIL` (verified sender in Brevo)
+- `MAIL_FROM_NAME`
+- `APP_URL` (the public web app origin, without an invite token)
+- `ALLOWED_ORIGINS` (comma-separated exact browser origins, such as the local Vite origin and production origin)
+
+The function reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEYS` from Supabase's injected environment. It uses the publishable key with the caller's Authorization header for RLS checks. A secret API key is used only for narrowly deleting a newly created pending invite if Brevo rejects the email; it never leaves the Edge Function. Do not put any Supabase secret key or Brevo key in a `VITE_` variable.
+
+Deploy after setting the secrets:
+
+```bash
+npx supabase functions deploy invite-member
+```
+
+Run the function's pure validation and email-content tests locally:
+
+```bash
+deno test supabase/functions/invite-member/invite_test.ts
+```
+
+Local Edge Functions read the custom env file when it is passed explicitly:
+
+```bash
+npx supabase functions serve invite-member --env-file supabase/functions/.env.local
+```
+
+This file is ignored by Git. Configure `ALLOWED_ORIGINS` for the actual local port in use (Vite may select another port if 5173 is occupied). Production and preview origins must be listed exactly.
+
 ## Invite expiration
 
 Invites expire after seven days by default. To change the default for new invites, run this in the Supabase SQL Editor:
