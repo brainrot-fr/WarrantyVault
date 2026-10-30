@@ -53,6 +53,7 @@ export const copy = {
   receiptOpenError: 'Could not open this receipt. Check your connection and retry.',
   receiptUrlInvalid: 'Receipt storage returned an invalid temporary link. Retry opening the receipt.',
   receiptDeleteError: 'Could not delete the receipt from storage. Retry the action.',
+  receiptOcrError: 'Could not read the receipt. Try a clearer image or enter the details manually.',
   fieldHelp: 'A short description helps make each field clear.',
   fieldError: 'Enter an item name.',
   fieldHelpId: 'sample-field-help',
