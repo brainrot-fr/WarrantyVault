@@ -376,6 +376,15 @@ allow_dynamic_registration = false
 [functions.invite-member]
 verify_jwt = true
 
+[functions.cloudinary-sign]
+verify_jwt = true
+
+[functions.cloudinary-url]
+verify_jwt = true
+
+[functions.receipt-delete]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
