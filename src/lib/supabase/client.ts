@@ -1,4 +1,6 @@
+import { Capacitor } from '@capacitor/core';
 import { createClient } from '@supabase/supabase-js';
+import { nativeAuthStorage } from './native-storage';
 import type { Database } from './types';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -15,6 +17,7 @@ export const supabase = createClient<Database>(supabaseUrl, supabasePublishableK
     flowType: 'pkce',
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: true,
+    detectSessionInUrl: !Capacitor.isNativePlatform(),
+    ...(Capacitor.isNativePlatform() ? { storage: nativeAuthStorage } : {}),
   },
 });

@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, ArrowRight, FileText, ImagePlus, LoaderCircle, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Camera, FileText, ImagePlus, LoaderCircle, X } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
 import { Link, useNavigate, useOutletContext } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -9,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { copy } from '@/lib/copy';
+import { captureReceiptPhoto, receiptPhotoToFile } from '@/features/receipts/native-camera';
 import { calculateWarrantyExpiry, formatDateOnly } from '@/lib/dates/warranty';
 import { parseReceiptText } from '@/lib/ocr/parser';
 import { recognizeReceipt } from '@/lib/ocr/receipt-ocr';
@@ -81,7 +84,7 @@ export function AddItemPage() {
     }
   }, [activeHouseholdId, getValues, households, setValue]);
 
-  async function selectReceipt(file: File) {
+  const selectReceipt = useCallback(async (file: File) => {
     let receipt;
     try {
       receipt = await validateReceiptFile(file);
@@ -114,6 +117,47 @@ export function AddItemPage() {
       toast.error(copy.receiptScanFailed);
     } finally {
       setIsReading(false);
+    }
+  }, [setValue, updateItemDraft]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let active = true;
+    let restoredResultListener: { remove: () => Promise<void> } | undefined;
+    void CapacitorApp.addListener('appRestoredResult', (event) => {
+      if (event.pluginId !== 'Camera' || event.methodName !== 'takePhoto') return;
+      if (!event.success) {
+        toast.error(copy.nativeCameraError, { description: event.error?.message });
+        return;
+      }
+      void receiptPhotoToFile(event.data).then(selectReceipt).catch((error: unknown) => {
+        toast.error(copy.nativeCameraError, {
+          description: error instanceof Error ? error.message : String(error),
+        });
+      });
+    }).then((listener) => {
+      if (active) restoredResultListener = listener;
+      else void listener.remove();
+    }).catch((error: unknown) => {
+      toast.error(copy.nativeCameraError, {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    });
+
+    return () => {
+      active = false;
+      if (restoredResultListener) void restoredResultListener.remove();
+    };
+  }, [selectReceipt]);
+
+  async function takeReceiptPhoto() {
+    try {
+      await selectReceipt(await captureReceiptPhoto());
+    } catch (error) {
+      toast.error(copy.nativeCameraError, {
+        description: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -219,13 +263,22 @@ export function AddItemPage() {
               <span>{copy.chooseReceipt}</span>
               <span className="receipt-dropzone-help">{copy.receiptOptional}</span>
             </label>
+            {Capacitor.isNativePlatform() && (
+              <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
+                <Camera aria-hidden="true" />{copy.takeReceiptPhoto}
+              </Button>
+            )}
+            {Capacitor.isNativePlatform() && (
+              <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
+                <Camera aria-hidden="true" />{copy.takeReceiptPhoto}
+              </Button>
+            )}
             <Input
               ref={fileInputRef}
               id="receipt-file"
               className="visually-hidden-file"
               type="file"
               accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-              capture="environment"
               onChange={(event) => {
                 const file = event.target.files?.[0];
                 if (file) void selectReceipt(file);

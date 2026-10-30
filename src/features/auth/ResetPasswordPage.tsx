@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { Link, Navigate } from 'react-router-dom';
@@ -8,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/app/auth-context';
 import { copy } from '@/lib/copy';
+import { nativeAuthRedirect } from '@/lib/native-config';
 import { supabase } from '@/lib/supabase/client';
 import { newPasswordSchema, resetRequestSchema, type NewPasswordValues, type ResetRequestValues } from './auth-schema';
 
@@ -32,7 +34,9 @@ export function ResetPasswordPage() {
     setIsSubmitting(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: new URL('/auth/reset', window.location.origin).toString(),
+        redirectTo: Capacitor.isNativePlatform()
+          ? nativeAuthRedirect('/reset')
+          : new URL('/auth/reset', window.location.origin).toString(),
       });
       if (error) {
         throw error;

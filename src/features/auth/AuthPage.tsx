@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
@@ -8,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/app/auth-context';
 import { copy } from '@/lib/copy';
+import { nativeAuthRedirect } from '@/lib/native-config';
 import { supabase } from '@/lib/supabase/client';
 import { authSchema, type AuthFormValues } from './auth-schema';
 
@@ -55,7 +58,9 @@ export function AuthPage() {
           password: values.password,
           options: {
             data: { display_name: displayName ?? '' },
-            emailRedirectTo: new URL('/', window.location.origin).toString(),
+            emailRedirectTo: Capacitor.isNativePlatform()
+              ? nativeAuthRedirect('/callback')
+              : new URL('/', window.location.origin).toString(),
           },
         });
 
@@ -90,18 +95,29 @@ export function AuthPage() {
   async function signInWithGoogle() {
     setIsSubmitting(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const native = Capacitor.isNativePlatform();
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
-        options: { redirectTo: new URL(returnTo, window.location.origin).toString() },
+        options: {
+          redirectTo: native
+            ? nativeAuthRedirect('/callback', returnTo)
+            : new URL(returnTo, window.location.origin).toString(),
+          ...(native ? { skipBrowserRedirect: true } : {}),
+        },
       });
 
       if (error) {
         throw error;
       }
+      if (native) {
+        if (!data.url) throw new Error(copy.nativeAuthUrlMissing);
+        await Browser.open({ url: data.url });
+      }
     } catch (error) {
       toast.error(copy.googleSignInError, {
         description: error instanceof Error ? error.message : String(error),
       });
+    } finally {
       setIsSubmitting(false);
     }
   }

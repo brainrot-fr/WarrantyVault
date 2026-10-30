@@ -313,14 +313,14 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
   async function generateClaimPack() {
     setIsGeneratingClaimPack(true);
     try {
-      const { createClaimPack, downloadClaimPack, fetchClaimPackReceipt } =
+      const { createClaimPack, exportClaimPack, fetchClaimPackReceipt } =
         await import('@/features/claim/claim-pack');
       const receiptBytes = item.receipt_public_id
         ? await fetchClaimPackReceipt(item.id)
         : undefined;
       const bytes = await createClaimPack(item, receiptBytes);
-      downloadClaimPack(item, bytes);
-      toast.success(copy.claimPackDownloaded);
+      const result = await exportClaimPack(item, bytes);
+      toast.success(result === 'shared' ? copy.claimPackShared : copy.claimPackDownloaded);
     } catch (error) {
       toast.error(copy.claimPackGenerationError, {
         description: error instanceof Error ? error.message : undefined,

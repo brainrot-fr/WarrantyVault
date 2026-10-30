@@ -1,3 +1,6 @@
+import { Capacitor } from '@capacitor/core';
+import { Directory, Filesystem } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 import fontkit from '@pdf-lib/fontkit';
 import { PDFDocument, rgb, type PDFFont, type PDFPage } from 'pdf-lib';
 import schibstedFontData from '@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2?inline';
@@ -290,4 +293,33 @@ export function downloadClaimPack(item: ClaimPackItem, bytes: Uint8Array) {
   anchor.click();
   anchor.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
+function bytesToBase64(bytes: Uint8Array) {
+  let binary = '';
+  const chunkSize = 0x8000;
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+  }
+  return btoa(binary);
+}
+
+export async function exportClaimPack(item: ClaimPackItem, bytes: Uint8Array) {
+  if (!Capacitor.isNativePlatform()) {
+    downloadClaimPack(item, bytes);
+    return 'downloaded' as const;
+  }
+
+  const { uri } = await Filesystem.writeFile({
+    path: claimPackFilename(item.name),
+    directory: Directory.Cache,
+    data: bytesToBase64(bytes),
+  });
+  await Share.share({
+    title: copy.claimPackTitle,
+    text: item.name,
+    files: [uri],
+    dialogTitle: copy.claimPackDownload,
+  });
+  return 'shared' as const;
 }

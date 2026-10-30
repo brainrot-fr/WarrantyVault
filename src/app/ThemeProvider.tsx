@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState, type PropsWithChildren } from 'react';
+import { Capacitor } from '@capacitor/core';
+import { StatusBar, Style } from '@capacitor/status-bar';
 import { toast } from 'sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { copy } from '@/lib/copy';
@@ -28,6 +30,13 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       const isDark = theme === 'dark' || (theme === 'system' && colorScheme.matches);
       document.documentElement.classList.toggle('dark', isDark);
       document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+      if (Capacitor.isNativePlatform()) {
+        void StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch((error: unknown) => {
+          toast.error(copy.nativeStatusBarError, {
+            description: error instanceof Error ? error.message : String(error),
+          });
+        });
+      }
     };
 
     applyTheme();
