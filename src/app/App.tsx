@@ -23,11 +23,11 @@ const ResetPasswordPage = lazy(() => import('@/features/auth/ResetPasswordPage')
 const AppShell = lazy(() => import('@/app/AppShell').then((module) => ({
   default: module.AppShell,
 })));
-const DrawerHome = lazy(() => import('@/app/AppShell').then((module) => ({
-  default: module.DrawerHome,
+const ItemsPage = lazy(() => import('@/features/items/ItemsPage').then((module) => ({
+  default: module.ItemsPage,
 })));
-const AddItemPlaceholder = lazy(() => import('@/app/AppShell').then((module) => ({
-  default: () => <module.ShellPlaceholder title={copy.addItem} description={copy.addItemComingSoon} />,
+const AddItemPage = lazy(() => import('@/features/items/AddItemPage').then((module) => ({
+  default: module.AddItemPage,
 })));
 const HouseholdPage = lazy(() => import('@/features/households/HouseholdPage').then((module) => ({
   default: module.HouseholdPage,
@@ -99,8 +99,9 @@ export function App() {
           )}
           <Route element={<ProtectedRoute />}>
             <Route element={<Suspense fallback={<RouteLoading />}><AppShell /></Suspense>}>
-              <Route index element={<Suspense fallback={<RouteLoading />}><DrawerHome /></Suspense>} />
-              <Route path="items/new" element={<Suspense fallback={<RouteLoading />}><AddItemPlaceholder /></Suspense>} />
+              <Route index element={<Suspense fallback={<RouteLoading />}><ItemsPage /></Suspense>} />
+              <Route path="items/new" element={<Suspense fallback={<RouteLoading />}><AddItemPage /></Suspense>} />
+              <Route path="items/:itemId" element={<Suspense fallback={<RouteLoading />}><ItemsPage /></Suspense>} />
               <Route path="household" element={<Suspense fallback={<RouteLoading />}><HouseholdPage /></Suspense>} />
               <Route path="invites" element={<Suspense fallback={<RouteLoading />}><InvitesPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<RouteLoading />}><SettingsPage /></Suspense>} />

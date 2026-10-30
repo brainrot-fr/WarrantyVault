@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Archive, House, Plus, Search, Settings, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/app/auth-context';
@@ -17,11 +16,23 @@ import {
 } from '@/app/household-selection';
 import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
+import { createEmptyItemDraft, type ItemDraft } from '@/features/items/item-draft';
+
+export interface AppShellContext {
+  activeHouseholdId: string;
+  households: Array<{ id: string; name: string }>;
+  searchTerm: string;
+  setSearchTerm: (value: string) => void;
+  itemDraft: ItemDraft;
+  updateItemDraft: (patch: Partial<ItemDraft>) => void;
+}
 
 export function AppShell() {
   const { user } = useAuth();
   const location = useLocation();
   const [selectedHouseholdId, setSelectedHouseholdId] = useState(readHouseholdSelection);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [itemDraft, setItemDraft] = useState(createEmptyItemDraft);
   const householdsQuery = useQuery({
     queryKey: ['households', user?.id],
     enabled: Boolean(user),
@@ -81,6 +92,10 @@ export function AppShell() {
     ? selectedHouseholdId
     : allHouseholdsValue;
 
+  const updateItemDraft = useCallback((patch: Partial<ItemDraft>) => {
+    setItemDraft((current) => ({ ...current, ...patch }));
+  }, []);
+
   useEffect(() => {
     if (!isSelectedHouseholdAvailable && selectedHouseholdId !== allHouseholdsValue) {
       try {
@@ -108,6 +123,14 @@ export function AppShell() {
     (household) => household.id === activeHouseholdId,
   )?.name;
   const avatarLabel = user?.email?.slice(0, 1).toUpperCase() ?? 'U';
+  const outletContext: AppShellContext = {
+    activeHouseholdId,
+    households: householdsQuery.data ?? [],
+    searchTerm,
+    setSearchTerm,
+    itemDraft,
+    updateItemDraft,
+  };
 
   return (
     <div className="app-shell">
@@ -133,7 +156,12 @@ export function AppShell() {
           </Select>
           <div className="app-search-wrap">
             <Search aria-hidden="true" />
-            <Input aria-label={copy.searchItems} placeholder={copy.searchPlaceholder} disabled />
+            <Input
+              aria-label={copy.searchItems}
+              placeholder={copy.searchPlaceholder}
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
           </div>
           <NavLink className="account-link" to="/settings" aria-label={copy.openSettings}>
             <Avatar>
@@ -155,15 +183,16 @@ export function AppShell() {
         </div>
       </aside>
 
-      <main className="app-content" key={location.pathname}>
-        {location.pathname === '/'
+      <main className="app-content">
+        {(location.pathname === '/' ||
+          (location.pathname.startsWith('/items/') && location.pathname !== '/items/new'))
           && addressedInvitesQuery.data
           && addressedInvitesQuery.data.length > 0 && (
             <Link className="pending-invites-banner" to="/invites">
               {copy.pendingInviteBanner(addressedInvitesQuery.data.length)}
             </Link>
           )}
-        <Outlet />
+        <Outlet context={outletContext} />
       </main>
 
       <nav className="app-bottom-nav" aria-label={copy.primaryNavigation}>
@@ -192,22 +221,6 @@ function ShellNavLink({ to, label, icon, end = false }: ShellNavLinkProps) {
       {icon}
       <span>{label}</span>
     </NavLink>
-  );
-}
-
-export function DrawerHome() {
-  const { user } = useAuth();
-
-  return (
-    <section className="app-placeholder">
-      <p className="app-section-label">{copy.drawer}</p>
-      <h1>{copy.drawerWelcome}</h1>
-      <p>{copy.drawerComingSoon}</p>
-      <p className="app-account-line">{copy.signedInAs} {user?.email}</p>
-      <Button asChild>
-        <Link to="/items/new">{copy.addFirstItem}</Link>
-      </Button>
-    </section>
   );
 }
 
