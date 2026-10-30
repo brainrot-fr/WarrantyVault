@@ -1,3 +1,5 @@
+<current_datetime>2026-10-30T17:02:35.091+05:30</current_datetime>
+
 # REBIRTH: rewrite WarrantyVault as React + Supabase + Cloudinary + Capacitor
 
 ## 0. Protocol (follow strictly)
@@ -247,3 +249,7 @@ details, Capacitor appId, APP_TIMEZONE (e.g. Asia/Kolkata).
 Gate passes with zero warnings. The parser tests ported from legacy pass. pgTAP RLS tests pass. A fresh clone plus
 docs/SETUP.md reproduces the deployment. A second account can be invited by email only and can accept with one tap.
 A manual `send-reminders` call with an item expiring in 30 days sends exactly one digest and a second call sends none.
+
+<tagged_files>
+* /home/syed-jalal/dev/WarrantyVault/frontend/.env (4 lines)
+</tagged_files>
