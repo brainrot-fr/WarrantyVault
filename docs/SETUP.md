@@ -78,6 +78,12 @@ npx supabase functions deploy receipt-delete
 
 Claim packs fetch that short-lived URL with browser CORS enabled, then embed the receipt bytes in the generated PDF. Cloudinary's private-download API responded with an allowed origin in a CORS preflight check; verify the deployed Cloudinary endpoint from the app's production origin if you change delivery settings. A failed fetch is shown in the app, and the item facts can still be downloaded by retrying after receipt access is restored.
 
+## Warranty reminder emails
+
+The `send-reminders` Edge Function sends one digest per opted-in household member for items expiring in exactly 30 or 7 days. Add `CRON_SECRET`, `APP_TIMEZONE` (an IANA time zone such as `Asia/Kolkata`), and optionally `MAX_EMAILS_PER_RUN` (defaults to `250`) to **Project Settings → Edge Functions → Secrets**. Use the same `CRON_SECRET` for the database Vault entry described in [OPERATIONS.md](./OPERATIONS.md). The function also uses the existing `BREVO_API_KEY`, `MAIL_FROM_EMAIL`, `MAIL_FROM_NAME`, and `APP_URL` values.
+
+Deploy with `npx supabase functions deploy send-reminders`. The function has JWT verification disabled and rejects requests without the matching `x-cron-secret` header. The migration schedules it daily at 03:30 UTC; see [OPERATIONS.md](./OPERATIONS.md) to store the project URL and cron secret in Vault and verify the schedule.
+
 ## Offline OCR and PDF reading
 
 The app vendors the Tesseract worker, WebAssembly cores, English trained data, PDF.js worker, CMaps, standard fonts, and PDF decoders under `public/`. Their matching npm versions are recorded in `package.json` and `package-lock.json`; keep the bundled assets in sync when upgrading those packages. OCR and PDF.js are dynamically imported only when receipt reading starts, and OCR does not depend on a CDN or network download.

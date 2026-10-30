@@ -1,4 +1,4 @@
-import { createCallerClient, createRollbackClient } from "../_shared/auth.ts";
+import { createCallerClient, createServiceClient } from "../_shared/auth.ts";
 import { sendBrevoEmail } from "../_shared/brevo.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildInviteEmail, parseInviteRequest } from "./invite-core.ts";
@@ -149,7 +149,7 @@ Deno.serve(async (request) => {
   let createdInvite = false;
   if (currentInvite && Date.parse(currentInvite.expires_at) <= Date.now()) {
     try {
-      const adminClient = createRollbackClient();
+      const adminClient = createServiceClient();
       const { error } = await adminClient
         .from("household_invites")
         .delete()
@@ -271,7 +271,7 @@ async function rollbackAndRespond(
 
   if (createdInvite) {
     try {
-      const adminClient = createRollbackClient();
+      const adminClient = createServiceClient();
       const { error } = await adminClient
         .from("household_invites")
         .delete()

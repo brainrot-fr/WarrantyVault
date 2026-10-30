@@ -50,7 +50,7 @@ export function createCallerClient(authorization: string) {
   );
 }
 
-export function createRollbackClient() {
+export function createServiceClient() {
   return createClient<Database>(
     getSupabaseUrl(),
     getDefaultApiKey("SUPABASE_SECRET_KEYS"),
