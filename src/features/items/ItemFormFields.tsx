@@ -1,15 +1,9 @@
-import { CalendarDays } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
 import { Controller, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { copy } from '@/lib/copy';
-import { formatDateOnly } from '@/lib/dates/warranty';
 import type { FieldConfidence } from '@/lib/ocr/parser';
 import type { ItemFormInput, ItemFormOutput } from './item-schemas';
 
@@ -121,32 +115,21 @@ export function ItemFormFields({
             const id = 'item-purchase-date';
             const errorId = `${id}-error`;
             const error = errors.purchase_date?.message;
-            const selected = field.value ? parseISO(field.value) : undefined;
             return (
               <div className="item-form-field">
                 <label className="item-form-label" htmlFor={id}>{copy.itemPurchaseDate}</label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      id={id}
-                      type="button"
-                      variant="outline"
-                      className="item-date-trigger"
-                      aria-invalid={Boolean(error)}
-                      aria-describedby={error ? errorId : undefined}
-                    >
-                      <span>{formatDateOnly(field.value) ?? copy.addDate}</span>
-                      <CalendarDays aria-hidden="true" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent align="start" className="item-date-popover">
-                    <Calendar
-                      mode="single"
-                      selected={selected}
-                      onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Input
+                  id={id}
+                  type="date"
+                  max={new Date().toLocaleDateString('en-CA')}
+                  value={field.value ?? ''}
+                  onChange={(event) => field.onChange(event.target.value)}
+                  onBlur={field.onBlur}
+                  name={field.name}
+                  ref={field.ref}
+                  aria-invalid={Boolean(error)}
+                  aria-describedby={error ? errorId : undefined}
+                />
                 {ambiguousDate && <p className="item-ambiguous-date">{copy.ambiguousReceiptDate}</p>}
                 <FieldError id={errorId} message={typeof error === 'string' ? error : undefined} />
               </div>

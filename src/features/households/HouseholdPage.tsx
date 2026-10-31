@@ -299,6 +299,12 @@ export function HouseholdPage() {
                 </header>
 
                 <Separator />
+                {isOwner && (
+                  <>
+                    <InviteMemberForm householdId={household.id} householdName={household.name} />
+                    <Separator />
+                  </>
+                )}
                 <section className="household-section" aria-labelledby={`members-${household.id}`}>
                   <h3 id={`members-${household.id}`}>{copy.membersTitle}</h3>
                   <ul className="household-people">
@@ -336,9 +342,6 @@ export function HouseholdPage() {
                     })}
                   </ul>
                 </section>
-
-                <Separator />
-                <InviteMemberForm householdId={household.id} householdName={household.name} />
 
                 <section className="household-section" aria-labelledby={`pending-${household.id}`}>
                   <h3 id={`pending-${household.id}`}>{copy.pendingInvites}</h3>

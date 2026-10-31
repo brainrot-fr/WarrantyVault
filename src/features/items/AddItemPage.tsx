@@ -418,7 +418,7 @@ export function AddItemPage() {
       </form>
 
       <Button asChild variant="ghost" className="item-flow-cancel">
-        <Link to="/">{copy.backToDrawer}</Link>
+        <Link to="/">{copy.backToWarranties}</Link>
       </Button>
     </section>
   );

@@ -503,6 +503,33 @@ select {
   padding-inline: clamp(20px, 4vw, 40px);
 }
 
+.warranties-onboarding {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 360px;
+  place-content: center;
+  padding: 48px 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  background: var(--card);
+}
+
+.warranties-onboarding h2,
+.warranties-onboarding p {
+  margin: 0;
+}
+
+.warranties-onboarding > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .app-topbar {
   position: sticky;
   z-index: 30;
@@ -673,6 +700,32 @@ select {
 .settings-theme-options {
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+.settings-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-section h2 {
+  margin: 0;
+}
+
+.settings-inline-action {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .app-bottom-nav {
@@ -1554,6 +1607,27 @@ select {
 @media (max-width: 1023px) {
   .app-rail {
     display: none;
+  }
+
+  @media (pointer: coarse) {
+    button[data-size="default"],
+    button:not([data-size]),
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select {
+      min-height: 44px;
+    }
+
+    button[data-size="sm"],
+    button[size="sm"] {
+      min-height: 36px;
+    }
+
+    button[data-size="icon"],
+    button[size="icon"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
   }
 
   .items-layout {

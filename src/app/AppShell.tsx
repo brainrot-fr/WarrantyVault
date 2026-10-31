@@ -142,7 +142,7 @@ export function AppShell() {
         <Link className="app-brand" to="/" aria-label={copy.appName}>{copy.appName}</Link>
         <ButtonPrimaryLink />
         <nav className="app-rail-nav">
-          <ShellNavLink to="/" label={copy.drawer} icon={<Archive aria-hidden="true" />} end />
+          <ShellNavLink to="/" label={copy.warranties} icon={<Archive aria-hidden="true" />} end />
           <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
           <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
         </nav>
@@ -177,7 +177,7 @@ export function AppShell() {
       </main>
 
       <nav className="app-bottom-nav" aria-label={copy.primaryNavigation}>
-        <ShellNavLink to="/" label={copy.drawer} icon={<Archive aria-hidden="true" />} end />
+        <ShellNavLink to="/" label={copy.warranties} icon={<Archive aria-hidden="true" />} end />
         <ShellNavLink to="/items/new" label={copy.addItem} icon={<Plus aria-hidden="true" />} />
         <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
         <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />

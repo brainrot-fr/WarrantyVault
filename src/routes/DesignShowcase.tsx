@@ -164,11 +164,11 @@ function ComponentSamples() {
         </Sheet>
         <Drawer>
           <DrawerTrigger asChild>
-            <Button variant="outline">{copy.showDrawer}</Button>
+            <Button variant="outline">{copy.showWarranties}</Button>
           </DrawerTrigger>
           <DrawerContent>
             <DrawerHeader>
-              <DrawerTitle>{copy.drawerTitle}</DrawerTitle>
+              <DrawerTitle>{copy.warrantiesTitle}</DrawerTitle>
             </DrawerHeader>
           </DrawerContent>
         </Drawer>

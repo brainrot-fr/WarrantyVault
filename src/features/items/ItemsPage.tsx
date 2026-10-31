@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, ArrowLeft, CalendarDays, FileText, Pencil, Trash2 } from 'lucide-react';
@@ -113,7 +113,7 @@ function ItemList({
   }
 
   return (
-    <section className="drawer-list" aria-label={copy.drawer}>
+    <section className="drawer-list" aria-label={copy.warranties}>
       <div className="item-filter-chips" role="group" aria-label={copy.filterItems}>
         {filters.map((option) => (
           <Button
@@ -331,7 +331,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
     <article className="item-detail">
       <div className="item-detail-mobile-back">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/"><ArrowLeft aria-hidden="true" />{copy.backToDrawer}</Link>
+          <Link to="/"><ArrowLeft aria-hidden="true" />{copy.backToWarranties}</Link>
         </Button>
       </div>
       <header className="item-detail-heading">
@@ -610,14 +610,26 @@ export function ItemsPage() {
     await queryClient.invalidateQueries({ queryKey: ['items'] });
   }
 
-  const item = itemsQuery.data?.find((candidate) => candidate.id === itemId);
+  const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
+  const item = items.find((candidate) => candidate.id === itemId);
+  const expiredCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expired').length;
+  const expiringCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expiring').length;
+  const urgentItem = items
+    .filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket !== 'active')
+    .sort(compareUrgency)[0];
+
+  useEffect(() => {
+    if (itemId || itemsQuery.isLoading || !window.matchMedia('(min-width: 1024px)').matches) return;
+    const target = urgentItem ?? [...items].sort((left, right) => left.name.localeCompare(right.name))[0];
+    if (target) navigate(`/items/${target.id}`, { replace: true });
+  }, [itemId, itemsQuery.isLoading, items, navigate, urgentItem]);
 
   return (
     <div className="page warranties-page">
       <header className="page-header warranties-header">
         <div>
-          <h1>{copy.drawerHeading}</h1>
-          <p>{copy.drawerDescription}</p>
+          <h1>{copy.warrantiesHeading}</h1>
+          <p>{copy.warrantiesSummary(expiredCount, expiringCount)}</p>
         </div>
         <div className="warranties-header-controls">
           <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} aria-label={copy.searchItems} placeholder={copy.searchPlaceholder} />
@@ -633,6 +645,16 @@ export function ItemsPage() {
           <Button asChild><Link to="/items/new">{copy.addItemAction}</Link></Button>
         </div>
       </header>
+      {items.length === 0 && !itemsQuery.isLoading ? (
+        <section className="warranties-onboarding">
+          <h2>{copy.noItemsTitle}</h2>
+          <p>{copy.noItemsDescription}</p>
+          <div>
+            <Button asChild><Link to="/items/new?capture=receipt">{copy.scanReceipt}</Link></Button>
+            <Button asChild variant="outline"><Link to="/items/new">{copy.enterManually}</Link></Button>
+          </div>
+        </section>
+      ) : (
       <div className={`items-layout${itemId ? ' has-selection' : ''}`}>
       <ItemList
         items={itemsQuery.data ?? []}
@@ -650,7 +672,7 @@ export function ItemsPage() {
         ) : (
           <section className="item-not-found">
             <p>{copy.itemNotFound}</p>
-            <Button type="button" onClick={() => navigate('/')}>{copy.backToDrawer}</Button>
+            <Button type="button" onClick={() => navigate('/')}>{copy.backToWarranties}</Button>
           </section>
         )
       ) : (
@@ -662,6 +684,7 @@ export function ItemsPage() {
         </section>
       )}
       </div>
+      )}
     </div>
   );
 }
