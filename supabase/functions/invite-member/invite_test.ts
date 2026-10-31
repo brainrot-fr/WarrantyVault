@@ -48,6 +48,16 @@ Deno.test("invite email includes the email-only inbox route and escapes user con
   assertEquals(email.htmlContent.includes("token"), false);
 });
 
+Deno.test("invite email accepts a hostname APP_URL and uses HTTPS", () => {
+  const email = buildInviteEmail(
+    "person@example.com",
+    "Home",
+    "Member",
+    "warrantyvault1729.vercel.app",
+  );
+  assertStringIncludes(email.htmlContent, "https://warrantyvault1729.vercel.app/invites");
+});
+
 Deno.test("invite email rejects non-web app URLs", () => {
   let rejected = false;
   try {
