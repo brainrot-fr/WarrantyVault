@@ -46,13 +46,13 @@ Function now owns the operation.
 | Legacy surface | Replacement | Evidence |
 | --- | --- | --- |
 | Login and session guard | Supabase email/password, Google OAuth, PKCE reset flow, protected React Router shell. | `src/features/auth`; `src/app/AuthProvider.tsx`; auth tests |
-| Dashboard | Drawer at `/` with attention-first sorting, search, filters, categories, and master-detail layout. | `src/features/items/ItemsPage.tsx`; `src/app/App.tsx` |
-| Add item | Three-step capture/review/coverage flow with draft persistence and live expiry preview. | `src/features/items/AddItemPage.tsx`; item schema/date tests |
-| Item details | Coverage timeline, status stamp, receipt viewer, edit sheet, delete dialog, and claim-pack action. | `src/features/items/ItemsPage.tsx`; claim-pack tests |
-| Household page | Household creation, member roles, invite/revoke/resend, remove member, owner delete, and member leave rules. | `src/features/households/HouseholdPage.tsx`; household schema/RLS tests |
-| Accept invite page | `/invites` pending invite list with one-tap accept/decline and Drawer banner. | `src/features/households/InvitesPage.tsx`; RLS tests |
-| Theme context and glass design showcase | Thermal-paper design tokens, light/dark theme provider, Slip/Stamp components, and dev-only `/design`. | `src/styles`; `src/components/ReceiptSlip.tsx`; `src/components/StatusStamp.tsx`; contrast test |
-| Receipt upload and preview | Magic-byte validation, Cloudinary signed storage, PDF.js OCR support, and optional receipts. In-app PDF rendering is not implemented yet (planned for C5). | `src/features/receipts`; receipt validation tests |
+| Dashboard | Warranties at `/` with attention-first sorting, search, status filters, and status sections. | `src/features/items/ItemsPage.tsx`; `src/app/App.tsx` |
+| Add warranty | Three-step receipt/product/warranty flow with draft persistence and live expiry preview. | `src/features/items/AddItemPage.tsx`; item schema/date tests |
+| Item details | Warranty summary, status, receipt viewer, edit sheet, delete dialog, and Claim PDF action. | `src/features/items/ItemsPage.tsx`; claim-pack tests |
+| Family page | Family creation, member roles, invite/revoke/resend, remove member, owner delete, and member leave rules. | `src/features/households/HouseholdPage.tsx`; household schema/RLS tests |
+| Accept invite page | `/invites` pending invite list with one-tap accept/decline and the Family invitation banner. | `src/features/households/InvitesPage.tsx`; RLS tests |
+| Theme context and design showcase | Shared tokens, light/dark theme provider, familiar components, and dev-only `/design`. | `src/styles`; `src/components`; contrast test |
+| Receipt upload and preview | Magic-byte validation, Cloudinary signed storage, OCR support, and receipt viewing for images and PDFs. | `src/features/receipts`; receipt validation tests |
 | OCR | Offline browser pipeline with image downscaling/grayscale, PDF text threshold, parser confidence, and ambiguous-date markers. | `src/lib/ocr`; OCR tests |
 
 ## Business rules and defects addressed
@@ -69,12 +69,12 @@ Function now owns the operation.
 | Merchant stored in notes | Dedicated `merchant` column, plus serial number and currency. | `supabase/migrations`; item form |
 | Claim pack printed only storage path | Receipt bytes are embedded as image pages or merged PDF pages. | `src/features/claim/claim-pack.test.ts` |
 | Ambiguous OCR dates guessed silently | Review UI marks ambiguous dates for confirmation. | `src/lib/ocr/parser.test.ts`; item review flow |
-| Inline PDF iframe on mobile | Not implemented: receipts open through the existing receipt URL action pending Phase C5 PDF rendering. | `src/features/items/ItemsPage.tsx` |
+| Inline PDF iframe on mobile | Receipt images and PDFs open through the in-app/native receipt viewer. | `src/features/items/ItemsPage.tsx`; `src/features/receipts` |
 | Missing password reset/settings/removal/leave/revoke/opt-out | Reset, settings, member management, invite management, and reminder preference are implemented. | `src/features/auth`; household/settings pages; RLS tests |
 
 ## Verification status
 
-- Application phase gates pass: typecheck, lint, 61 Vitest tests, and production build.
+- Application phase gates pass: typecheck, lint, Vitest, production build, and the documented targeted checks.
 - Deno unit tests for invite, Cloudinary signing, and reminder logic pass.
 - Supabase pgTAP tests are present but were not executable in this environment because Docker/Postgres was unavailable at `127.0.0.1:54322`.
 - Android and iOS Capacitor projects are scaffolded; Android is the supported first target, while iOS remains untested on Linux.

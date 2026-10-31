@@ -111,6 +111,16 @@ npx supabase functions serve invite-member --env-file supabase/functions/.env.lo
 
 This file is ignored by Git. Configure `ALLOWED_ORIGINS` for the actual local port in use (Vite may select another port if 5173 is occupied). Production and preview origins must be listed exactly.
 
+## Account deletion function
+
+Deploy `delete-account` with JWT verification enabled:
+
+```bash
+npx supabase functions deploy delete-account
+```
+
+The function removes Cloudinary receipts owned by the user where possible, removes solo households, and then removes the Supabase Auth account. A household owner who still has other members must transfer ownership or remove those members before deleting the account. Callers receive a plain error when that restriction applies.
+
 ## Cloudinary receipt storage
 
 Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in the same Supabase Edge Function Secrets page. The API secret is used only by the Edge Functions. `cloudinary-sign` returns a short-lived signed upload request for an authenticated asset in the caller's household folder; the browser never receives the API secret. Deploy the three storage functions after setting the secrets:
