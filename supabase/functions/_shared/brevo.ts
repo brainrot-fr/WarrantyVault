@@ -35,6 +35,12 @@ export async function sendBrevoEmail(message: BrevoEmailContent) {
   });
 
   if (!response.ok) {
+    const responseBody = await response.text().catch(() => "");
+    const detail = responseBody.slice(0, 500).replace(/\s+/g, " ").trim();
+    console.error("Brevo rejected the transactional email.", {
+      status: response.status,
+      detail,
+    });
     throw new Error(
       `Brevo rejected the transactional email with status ${response.status}.`,
     );
