@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDownToLine, ArrowLeft, CalendarDays, FileText, Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, CalendarDays, FileText, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -9,6 +9,8 @@ import { ReceiptSlip } from '@/components/ReceiptSlip';
 import { StatusStamp } from '@/components/StatusStamp';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { copy } from '@/lib/copy';
 import { formatDateOnly, getCoverageProgress, getWarrantyStatus } from '@/lib/dates/warranty';
@@ -17,6 +19,7 @@ import { deleteReceipt, getTemporaryReceiptUrl, uploadReceipt } from '@/features
 import { validateReceiptFile } from '@/features/receipts/receipt-validation';
 import type { Database } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
+import { errorMessage } from '@/lib/errors';
 import type { AppShellContext } from '@/app/AppShell';
 import { ItemFormFields } from './ItemFormFields';
 import { itemFormSchema, type ItemFormInput, type ItemFormOutput } from './item-schemas';
@@ -110,13 +113,7 @@ function ItemList({
   }
 
   return (
-    <section className="drawer-list" aria-label={copy.drawer}>
-      <div className="drawer-list-heading">
-        <h1>{copy.drawerHeading}</h1>
-        <Button asChild size="sm">
-          <Link to="/items/new"><Plus aria-hidden="true" />{copy.addItemAction}</Link>
-        </Button>
-      </div>
+    <section className="drawer-list" aria-label={copy.warranties}>
       <div className="item-filter-chips" role="group" aria-label={copy.filterItems}>
         {filters.map((option) => (
           <Button
@@ -220,7 +217,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
     } catch (error) {
       newWindow.close();
       toast.error(copy.receiptOpenError, {
-        description: error instanceof Error ? error.message : undefined,
+        description: errorMessage(error),
       });
     }
   }
@@ -250,7 +247,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
         }
       }
       toast.error(copy.receiptReplaceError, {
-        description: error instanceof Error ? error.message : copy.receiptReplaceUploadError,
+        description: errorMessage(error),
       });
       return;
     } finally {
@@ -281,7 +278,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
       if (error) throw error;
     } catch (error) {
       toast.error(copy.itemDeleteError, {
-        description: error instanceof Error ? error.message : undefined,
+        description: errorMessage(error),
       });
       setIsDeleting(false);
       return;
@@ -323,7 +320,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
       toast.success(result === 'shared' ? copy.claimPackShared : copy.claimPackDownloaded);
     } catch (error) {
       toast.error(copy.claimPackGenerationError, {
-        description: error instanceof Error ? error.message : undefined,
+        description: errorMessage(error),
       });
     } finally {
       setIsGeneratingClaimPack(false);
@@ -334,7 +331,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
     <article className="item-detail">
       <div className="item-detail-mobile-back">
         <Button asChild variant="ghost" size="sm">
-          <Link to="/"><ArrowLeft aria-hidden="true" />{copy.backToDrawer}</Link>
+          <Link to="/"><ArrowLeft aria-hidden="true" />{copy.backToWarranties}</Link>
         </Button>
       </div>
       <header className="item-detail-heading">
@@ -536,7 +533,7 @@ function EditItemSheet({
       if (error) throw error;
     } catch (error) {
       toast.error(copy.itemUpdateError, {
-        description: error instanceof Error ? error.message : copy.itemUpdateError,
+        description: errorMessage(error),
       });
       setIsSaving(false);
       return;
@@ -583,7 +580,8 @@ function EditItemSheet({
 }
 
 export function ItemsPage() {
-  const { activeHouseholdId, searchTerm } = useOutletContext<AppShellContext>();
+  const { activeHouseholdId, searchTerm, setSearchTerm, households, changeHousehold } =
+    useOutletContext<AppShellContext>();
   const { itemId } = useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -603,7 +601,7 @@ export function ItemsPage() {
   useEffect(() => {
     if (itemsQuery.isError) {
       toast.error(copy.itemLoadError, {
-        description: itemsQuery.error instanceof Error ? itemsQuery.error.message : undefined,
+        description: errorMessage(itemsQuery.error),
       });
     }
   }, [itemsQuery.error, itemsQuery.isError]);
@@ -612,10 +610,52 @@ export function ItemsPage() {
     await queryClient.invalidateQueries({ queryKey: ['items'] });
   }
 
-  const item = itemsQuery.data?.find((candidate) => candidate.id === itemId);
+  const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
+  const item = items.find((candidate) => candidate.id === itemId);
+  const expiredCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expired').length;
+  const expiringCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expiring').length;
+  const urgentItem = items
+    .filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket !== 'active')
+    .sort(compareUrgency)[0];
+
+  useEffect(() => {
+    if (itemId || itemsQuery.isLoading || !window.matchMedia('(min-width: 1024px)').matches) return;
+    const target = urgentItem ?? [...items].sort((left, right) => left.name.localeCompare(right.name))[0];
+    if (target) navigate(`/items/${target.id}`, { replace: true });
+  }, [itemId, itemsQuery.isLoading, items, navigate, urgentItem]);
 
   return (
-    <div className={`items-layout${itemId ? ' has-selection' : ''}`}>
+    <div className="page warranties-page">
+      <header className="page-header warranties-header">
+        <div>
+          <h1>{copy.warrantiesHeading}</h1>
+          <p>{copy.warrantiesSummary(expiredCount, expiringCount)}</p>
+        </div>
+        <div className="warranties-header-controls">
+          <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} aria-label={copy.searchItems} placeholder={copy.searchPlaceholder} />
+          {households.length > 1 && (
+            <Select value={activeHouseholdId} onValueChange={changeHousehold}>
+              <SelectTrigger aria-label={copy.selectHouseholdLabel}><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{copy.allHouseholds}</SelectItem>
+                {households.map((household) => <SelectItem key={household.id} value={household.id}>{household.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          )}
+          <Button asChild><Link to="/items/new">{copy.addItemAction}</Link></Button>
+        </div>
+      </header>
+      {items.length === 0 && !itemsQuery.isLoading ? (
+        <section className="warranties-onboarding">
+          <h2>{copy.noItemsTitle}</h2>
+          <p>{copy.noItemsDescription}</p>
+          <div>
+            <Button asChild><Link to="/items/new?capture=receipt">{copy.scanReceipt}</Link></Button>
+            <Button asChild variant="outline"><Link to="/items/new">{copy.enterManually}</Link></Button>
+          </div>
+        </section>
+      ) : (
+      <div className={`items-layout${itemId ? ' has-selection' : ''}`}>
       <ItemList
         items={itemsQuery.data ?? []}
         selectedItemId={itemId}
@@ -632,7 +672,7 @@ export function ItemsPage() {
         ) : (
           <section className="item-not-found">
             <p>{copy.itemNotFound}</p>
-            <Button type="button" onClick={() => navigate('/')}>{copy.backToDrawer}</Button>
+            <Button type="button" onClick={() => navigate('/')}>{copy.backToWarranties}</Button>
           </section>
         )
       ) : (
@@ -642,6 +682,8 @@ export function ItemsPage() {
           <p>{copy.chooseItemDescription}</p>
           <Button asChild variant="outline"><Link to="/items/new">{copy.addItemAction}</Link></Button>
         </section>
+      )}
+      </div>
       )}
     </div>
   );

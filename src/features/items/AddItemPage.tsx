@@ -21,6 +21,7 @@ import type { AppShellContext } from '@/app/AppShell';
 import { supabase } from '@/lib/supabase/client';
 import { ItemFormFields } from './ItemFormFields';
 import { createEmptyItemDraft } from './item-draft';
+import { errorMessage } from '@/lib/errors';
 import { emptyItemFormValues, itemFormSchema, type ItemFormInput, type ItemFormOutput } from './item-schemas';
 
 const reviewFields = [
@@ -44,6 +45,7 @@ export function AddItemPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const defaultHouseholdCreationRef = useRef(false);
   const draftValuesRef = useRef(itemDraft.values);
   const [isReading, setIsReading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,12 +86,28 @@ export function AddItemPage() {
     }
   }, [activeHouseholdId, getValues, households, setValue]);
 
+  useEffect(() => {
+    if (households.length !== 0 || defaultHouseholdCreationRef.current) return;
+    defaultHouseholdCreationRef.current = true;
+    void supabase.rpc('create_household', { name: 'Home' }).then(({ data, error }) => {
+      if (error) {
+        console.error('Could not create the default household.', error);
+        defaultHouseholdCreationRef.current = false;
+        return;
+      }
+      if (typeof data === 'string') {
+        setValue('household_id', data, { shouldDirty: true });
+        void queryClient.invalidateQueries({ queryKey: ['households'] });
+      }
+    });
+  }, [households.length, queryClient, setValue]);
+
   const selectReceipt = useCallback(async (file: File) => {
     let receipt;
     try {
       receipt = await validateReceiptFile(file);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : copy.receiptFileUnsupported);
+      toast.error(errorMessage(error) || copy.receiptFileUnsupported);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -113,7 +131,9 @@ export function AddItemPage() {
         setValue('warranty_months', String(parsed.warrantyMonths), { shouldDirty: true });
       }
       toast.success(copy.receiptScanComplete);
-    } catch {
+    } catch (error) {
+      console.error('Receipt OCR failed.', error);
+      console.error('Receipt OCR cause.', error instanceof Error ? error.cause : undefined);
       toast.error(copy.receiptScanFailed);
     } finally {
       setIsReading(false);
@@ -133,7 +153,7 @@ export function AddItemPage() {
       }
       void receiptPhotoToFile(event.data).then(selectReceipt).catch((error: unknown) => {
         toast.error(copy.nativeCameraError, {
-          description: error instanceof Error ? error.message : String(error),
+          description: errorMessage(error),
         });
       });
     }).then((listener) => {
@@ -141,7 +161,7 @@ export function AddItemPage() {
       else void listener.remove();
     }).catch((error: unknown) => {
       toast.error(copy.nativeCameraError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     });
 
@@ -156,7 +176,7 @@ export function AddItemPage() {
       await selectReceipt(await captureReceiptPhoto());
     } catch (error) {
       toast.error(copy.nativeCameraError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     }
   }
@@ -184,13 +204,22 @@ export function AddItemPage() {
     let uploadedReceipt: Awaited<ReturnType<typeof uploadReceipt>> | null = null;
     let itemId: string;
     try {
+      let householdId = values.household_id;
+      if (!householdId) {
+        const { data, error } = await supabase.rpc('create_household', { name: 'Home' });
+        if (error) throw error;
+        householdId = data;
+        setValue('household_id', householdId);
+        await queryClient.invalidateQueries({ queryKey: ['households'] });
+      }
       if (itemDraft.receipt) {
-        uploadedReceipt = await uploadReceipt(values.household_id, itemDraft.receipt);
+        uploadedReceipt = await uploadReceipt(householdId, itemDraft.receipt);
       }
       const { data, error } = await supabase
         .from('items')
         .insert({
           ...values,
+          household_id: householdId,
           notes: values.notes || null,
           ...(uploadedReceipt ?? {}),
         })
@@ -208,7 +237,7 @@ export function AddItemPage() {
         }
       }
       toast.error(copy.itemSaveError, {
-        description: error instanceof Error ? error.message : copy.receiptUploadFailed,
+        description: errorMessage(error),
       });
       setIsSaving(false);
       return;
@@ -263,11 +292,6 @@ export function AddItemPage() {
               <span>{copy.chooseReceipt}</span>
               <span className="receipt-dropzone-help">{copy.receiptOptional}</span>
             </label>
-            {Capacitor.isNativePlatform() && (
-              <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
-                <Camera aria-hidden="true" />{copy.takeReceiptPhoto}
-              </Button>
-            )}
             {Capacitor.isNativePlatform() && (
               <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
                 <Camera aria-hidden="true" />{copy.takeReceiptPhoto}
@@ -385,7 +409,7 @@ export function AddItemPage() {
               <Button type="button" variant="outline" onClick={() => void backToCapture()}>
                 <ArrowLeft aria-hidden="true" />{copy.back}
               </Button>
-              <Button type="submit" disabled={isSaving || households.length === 0}>
+              <Button type="submit" disabled={isSaving}>
                 {isSaving ? copy.savingItem : copy.saveItem}
               </Button>
             </div>
@@ -394,7 +418,7 @@ export function AddItemPage() {
       </form>
 
       <Button asChild variant="ghost" className="item-flow-cancel">
-        <Link to="/">{copy.backToDrawer}</Link>
+        <Link to="/">{copy.backToWarranties}</Link>
       </Button>
     </section>
   );

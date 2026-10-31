@@ -116,7 +116,7 @@ export async function recognizeReceipt(
     const { createWorker } = await import('tesseract.js');
     const assetUrl = (path: string) => `${window.location.origin}${path}`;
     const worker = await createWorker('eng', 1, {
-      corePath: assetUrl('/tesseract-core/'),
+      corePath: assetUrl('/tesseract-core/tesseract-core-simd-lstm.wasm.js'),
       langPath: assetUrl('/tessdata'),
       workerPath: assetUrl('/tesseract/worker.min.js'),
       gzip: true,
@@ -133,6 +133,8 @@ export async function recognizeReceipt(
       await worker.terminate();
     }
   } catch (error) {
+    console.error('Receipt OCR failed.', error);
+    console.error('Receipt OCR cause.', error instanceof Error ? error.cause : undefined);
     throw new Error(copy.receiptOcrError, { cause: error });
   }
 }

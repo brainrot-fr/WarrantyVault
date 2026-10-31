@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useAuth } from '@/app/auth-context';
 import { copy } from '@/lib/copy';
 import { nativeAuthRedirect } from '@/lib/native-config';
+import { errorMessage } from '@/lib/errors';
 import { supabase } from '@/lib/supabase/client';
 import { newPasswordSchema, resetRequestSchema, type NewPasswordValues, type ResetRequestValues } from './auth-schema';
 
@@ -46,7 +47,7 @@ export function ResetPasswordPage() {
       toast.success(copy.resetEmailSent);
     } catch (error) {
       toast.error(copy.resetEmailError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     } finally {
       setIsSubmitting(false);
@@ -65,7 +66,7 @@ export function ResetPasswordPage() {
       toast.success(copy.passwordUpdated);
     } catch (error) {
       toast.error(copy.passwordUpdateError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     } finally {
       setIsSubmitting(false);

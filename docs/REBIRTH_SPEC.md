@@ -1,5 +1,3 @@
-<current_datetime>2026-10-30T17:02:35.091+05:30</current_datetime>
-
 # REBIRTH: rewrite WarrantyVault as React + Supabase + Cloudinary + Capacitor
 
 ## 0. Protocol (follow strictly)
@@ -124,10 +122,11 @@ Shared: `_shared/cors.ts` (origins from ALLOWED_ORIGINS, handle OPTIONS), `_shar
 caller's Authorization header so RLS applies), `_shared/brevo.ts` (POST https://api.brevo.com/v3/smtp/email
 with the `api-key` header). Outbound SMTP ports 25/587 are blocked on Edge Functions, so use the HTTPS API only.
 - cloudinary-sign: caller must be a member of the given household (checked via the RLS client). Returns a signed
-  upload payload (timestamp, signature, api_key, cloud_name, folder `warrantyvault/<household_id>`, type `authenticated`, allowed formats jpg/png/pdf). The API secret never leaves the function.
+  upload payload (timestamp, signature, api_key, cloud_name, folder `warrantyvault/<household_id>`,
+  type `authenticated`, allowed formats jpg/png/pdf). The API secret never leaves the function.
 - cloudinary-url: RLS-select the item (this proves access) and return a SHORT-LIVED (about 10 min) delivery URL.
-  Prefer an expiring URL (e.g. the private download URL with expires_at). If it cannot serve inline, fall back to
-  a signed authenticated delivery URL and tell me the trade-off. Verify in the current Cloudinary docs.
+  Prefer an expiring URL (e.g. the private download URL with expires_at). If it cannot serve inline, fall back to a
+  signed authenticated delivery URL and tell me the trade-off. Verify in the current Cloudinary docs.
 - receipt-delete: accept {public_id, resource_type}. Verify the public_id's folder matches a household the caller
   belongs to, then destroy it. Item delete = delete row (RLS) -> best-effort receipt-delete -> log failures.
 - invite-member: {household_id, email}. Insert via the RLS client, then send the invite email via Brevo.
@@ -139,7 +138,7 @@ with the `api-key` header). Outbound SMTP ports 25/587 are blocked on Edge Funct
   user (subject like "2 warranties expiring soon"; each item shows name, date, days left and a link
   `${APP_URL}/items/<id>`; footer links to /settings to opt out). On send failure delete that user's
   just-inserted log rows and continue. Respect MAX_EMAILS_PER_RUN (default 250) and return JSON counts.
-Schedule with pg_cron + pg_net, secret in Supabase Vault. Default 03:30 UTC, documented in docs/OPERATIONS.md.
+- Schedule with pg_cron + pg_net, secret in Supabase Vault. Default 03:30 UTC, documented in docs/OPERATIONS.md.
 Secrets: BREVO_API_KEY, MAIL_FROM_EMAIL, MAIL_FROM_NAME, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY,
 CLOUDINARY_API_SECRET, CRON_SECRET, APP_URL, ALLOWED_ORIGINS, APP_TIMEZONE, MAX_EMAILS_PER_RUN.
 Unit-test the pure logic (reminder selection and digest grouping) with Deno tests.
@@ -231,8 +230,8 @@ P9  Reminders (BR5): send-reminders, pg_cron, digest email, opt-out, docs/OPERAT
 P10 Capacitor: `@capacitor/core` + cli, Android first (iOS needs macOS/Xcode; scaffold it but mark untested).
     Ask me to confirm the appId first, since it is painful to change later. Plugins: app, browser, camera,
     filesystem, share, status-bar, splash-screen, preferences. Google OAuth with PKCE via a custom-scheme deep link
-    (`@capacitor/browser` + `appUrlOpen` -> exchangeCodeForSession). Use a Preferences-backed storage adapter for
-    the Supabase session. Native camera, with a web file-input fallback. Safe areas. Document `npx cap sync`/`run`
+    (`@capacitor/browser` + `appUrlOpen` -> exchangeCodeForSession). Use a Preferences-backed storage adapter for the
+    Supabase session. Native camera, with a web file-input fallback. Safe areas. Document `npx cap sync`/`run`
     in docs/MOBILE.md. If publishing to the App Store, note the in-app account deletion requirement and verify the rule.
 P11 Deploy: vercel.json SPA rewrite, env var docs, CI (typecheck, lint, test, build, supabase db tests) replacing the old
     workflows, preview-URL redirect allow-list notes for Supabase Auth.
@@ -249,7 +248,3 @@ details, Capacitor appId, APP_TIMEZONE (e.g. Asia/Kolkata).
 Gate passes with zero warnings. The parser tests ported from legacy pass. pgTAP RLS tests pass. A fresh clone plus
 docs/SETUP.md reproduces the deployment. A second account can be invited by email only and can accept with one tap.
 A manual `send-reminders` call with an item expiring in 30 days sends exactly one digest and a second call sends none.
-
-<tagged_files>
-* /home/syed-jalal/dev/WarrantyVault/frontend/.env (4 lines)
-</tagged_files>

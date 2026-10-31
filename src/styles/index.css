@@ -98,14 +98,6 @@ select {
 }
 
 button,
-input,
-textarea,
-select,
-[role="combobox"] {
-  min-height: 44px;
-}
-
-button,
 a,
 input[type="file"],
 select {
@@ -476,6 +468,68 @@ select {
   background: var(--background);
 }
 
+.page {
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: 0;
+  padding: 40px;
+}
+
+.page-header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.page-header h1 {
+  margin: 0;
+  font-size: clamp(31px, 5vw, 39px);
+  letter-spacing: -0.04em;
+}
+
+.page-header > p {
+  margin: 0;
+  color: var(--muted-foreground);
+}
+
+.warranties-header-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 360px) minmax(180px, 220px) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.warranties-page {
+  padding-inline: clamp(20px, 4vw, 40px);
+}
+
+.warranties-onboarding {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 360px;
+  place-content: center;
+  padding: 48px 24px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-align: center;
+  background: var(--card);
+}
+
+.warranties-onboarding h2,
+.warranties-onboarding p {
+  margin: 0;
+}
+
+.warranties-onboarding > div {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .app-topbar {
   position: sticky;
   z-index: 30;
@@ -534,7 +588,7 @@ select {
 
 .app-rail {
   position: fixed;
-  top: 68px;
+  top: 0;
   bottom: 0;
   left: 0;
   display: flex;
@@ -544,6 +598,31 @@ select {
   padding: 20px 12px;
   border-right: 1px solid var(--border);
   background: var(--background);
+}
+
+.app-rail-add {
+  width: calc(100% - 24px);
+  margin: 20px 12px;
+}
+
+.app-account-trigger {
+  display: grid;
+  width: 100%;
+  grid-template-columns: 44px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border: 0;
+  border-radius: var(--radius);
+  background: transparent;
+  text-align: left;
+}
+
+.app-account-trigger strong,
+.app-account-trigger small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .app-rail-nav,
@@ -585,17 +664,10 @@ select {
 }
 
 .app-content {
-  min-height: calc(100svh - 68px);
+  min-height: 100svh;
   margin-left: 224px;
-  padding: 40px clamp(24px, 5vw, 72px);
 }
 
-.app-placeholder {
-  width: min(100%, 68ch);
-  margin-inline: auto;
-}
-
-.app-placeholder h1,
 .app-error-page h1 {
   margin: 0 0 12px;
   font-size: clamp(31px, 5vw, 39px);
@@ -604,9 +676,6 @@ select {
   line-height: 1.1;
 }
 
-.app-placeholder > p:not(.app-section-label) {
-  color: var(--muted-foreground);
-}
 
 .app-section-label {
   margin: 0 0 12px;
@@ -631,6 +700,32 @@ select {
 .settings-theme-options {
   flex-wrap: wrap;
   margin-top: 10px;
+}
+
+.settings-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-section h2 {
+  margin: 0;
+}
+
+.settings-inline-action {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
 }
 
 .app-bottom-nav {
@@ -1514,6 +1609,27 @@ select {
     display: none;
   }
 
+  @media (pointer: coarse) {
+    button[data-size="default"],
+    button:not([data-size]),
+    input:not([type="checkbox"]):not([type="radio"]),
+    textarea,
+    select {
+      min-height: 44px;
+    }
+
+    button[data-size="sm"],
+    button[size="sm"] {
+      min-height: 36px;
+    }
+
+    button[data-size="icon"],
+    button[size="icon"] {
+      min-height: 44px;
+      min-width: 44px;
+    }
+  }
+
   .items-layout {
     display: block;
   }
@@ -1541,10 +1657,24 @@ select {
     bottom: 0;
     left: 0;
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
     border-top: 1px solid var(--border);
     background: var(--background);
+  }
+
+  .app-bottom-nav .shell-nav-link {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    min-height: 56px;
+    padding-inline: 4px;
+    font-size: 12px;
+  }
+
+  .app-bottom-nav .shell-nav-link[href="/items/new"] {
+    color: var(--primary);
+    font-weight: 800;
   }
 }
 
@@ -1570,6 +1700,17 @@ select {
 }
 
 @media (max-width: 767px) {
+  .page {
+    padding: 24px 20px;
+  }
+
+  .warranties-header-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .warranties-header-controls > input {
+    grid-column: 1 / -1;
+  }
   .design-header {
     align-items: flex-start;
     flex-direction: column;

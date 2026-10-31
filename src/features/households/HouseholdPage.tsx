@@ -4,6 +4,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { invoke } from '@/lib/supabase/invoke';
+import { errorMessage } from '@/lib/errors';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -109,7 +111,7 @@ export function HouseholdPage() {
         persistHouseholdSelection(householdId);
       } catch (error) {
         toast.error(copy.householdPreferenceWriteError, {
-          description: error instanceof Error ? error.message : String(error),
+          description: errorMessage(error),
         });
       }
       toast.success(copy.householdCreated);
@@ -148,7 +150,7 @@ export function HouseholdPage() {
           persistHouseholdSelection('all');
         } catch (error) {
           toast.error(copy.householdPreferenceWriteError, {
-            description: error instanceof Error ? error.message : String(error),
+            description: errorMessage(error),
           });
         }
       }
@@ -187,10 +189,7 @@ export function HouseholdPage() {
   });
   const resendInvite = useMutation({
     mutationFn: async (invite: Pick<Invite, 'household_id' | 'email'>) => {
-      const { error } = await supabase.functions.invoke('invite-member', {
-        body: { household_id: invite.household_id, email: invite.email },
-      });
-      if (error) throw error;
+      await invoke('invite-member', { household_id: invite.household_id, email: invite.email });
     },
     onSuccess: async () => {
       toast.success(copy.inviteResent);
@@ -250,10 +249,11 @@ export function HouseholdPage() {
   }
 
   return (
-    <section className="app-placeholder household-page">
-      <p className="app-section-label">{copy.household}</p>
+    <section className="page household-page">
+      <header className="page-header">
       <h1>{copy.householdsTitle}</h1>
       <p>{copy.householdsDescription}</p>
+      </header>
       <Link className="auth-inline-link" to="/invites">{copy.viewMyInvites}</Link>
 
       <form className="household-create-form" onSubmit={createForm.handleSubmit(submitCreate)} noValidate>
@@ -299,6 +299,12 @@ export function HouseholdPage() {
                 </header>
 
                 <Separator />
+                {isOwner && (
+                  <>
+                    <InviteMemberForm householdId={household.id} householdName={household.name} />
+                    <Separator />
+                  </>
+                )}
                 <section className="household-section" aria-labelledby={`members-${household.id}`}>
                   <h3 id={`members-${household.id}`}>{copy.membersTitle}</h3>
                   <ul className="household-people">
@@ -336,9 +342,6 @@ export function HouseholdPage() {
                     })}
                   </ul>
                 </section>
-
-                <Separator />
-                <InviteMemberForm householdId={household.id} householdName={household.name} />
 
                 <section className="household-section" aria-labelledby={`pending-${household.id}`}>
                   <h3 id={`pending-${household.id}`}>{copy.pendingInvites}</h3>
@@ -456,10 +459,7 @@ function InviteMemberForm({ householdId, householdName }: { householdId: string;
   });
   const inviteMember = useMutation({
     mutationFn: async ({ email }: InviteMemberValues) => {
-      const { error } = await supabase.functions.invoke('invite-member', {
-        body: { household_id: householdId, email },
-      });
-      if (error) throw error;
+      await invoke('invite-member', { household_id: householdId, email });
     },
     onSuccess: async () => {
       form.reset();

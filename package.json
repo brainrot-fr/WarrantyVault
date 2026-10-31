@@ -3,11 +3,14 @@
   "version": "1.0.0",
   "description": "WarrantyVault keeps purchase receipts, warranty dates, expiry reminders, and household item records together. Upload a JPG, PNG, or PDF receipt, review the OCR prefill, and generate a claim-pack PDF when service is needed.",
   "scripts": {
+    "predev": "node scripts/vendor-ocr-assets.mjs",
+    "prebuild": "node scripts/vendor-ocr-assets.mjs",
     "dev": "vite",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src vite.config.ts vitest.config.ts eslint.config.js --max-warnings=0",
     "test": "vitest run",
+    "check:ocr-assets": "node scripts/check-ocr-assets.mjs",
     "db:test": "supabase test db --local"
   },
   "type": "module",

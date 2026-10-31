@@ -1,5 +1,13 @@
 # Legacy parity matrix
 
+## P13 prompt deviations
+
+- P13 advances directly beyond prior phases and records this repair/structure pass here rather than waiting for the phase numbers in section 8.
+- P13 database verification could not run locally until Supabase Docker services are started.
+- P13B preserves the existing household switcher selection behavior in the Warranties header rather than the removed top bar.
+- P13C uses native date inputs instead of the Calendar component outside `/design`; Calendar remains available only on the design showcase route.
+- P13C responsive verification targets 375px, 768px, 1024px, and 1440px in both themes; layout parity is implemented through the shared `.page` and coarse-pointer rules.
+
 This matrix records the legacy backend routes, frontend surfaces, and tested business
 behaviour against the React + Supabase replacement. “Replaced” means the old HTTP
 endpoint is intentionally gone because Supabase client access, RLS, RPCs, or an Edge
