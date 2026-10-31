@@ -1,5 +1,4 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { cp, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
 const root = resolve(import.meta.dirname, '..');
@@ -12,11 +11,15 @@ async function copy(source, destination) {
 
 await mkdir(publicDir, { recursive: true });
 await copy('node_modules/tesseract.js/dist/worker.min.js', 'public/tesseract/worker.min.js');
-await copy('node_modules/tesseract.js-core', 'public/tesseract-core');
-await rm(resolve(publicDir, 'tesseract-core/package.json'), { force: true });
-await rm(resolve(publicDir, 'tesseract-core/README.md'), { force: true });
-await rm(resolve(publicDir, 'tesseract-core/LICENSE'), { force: true });
-await rm(resolve(publicDir, 'tesseract-core/index.js'), { force: true });
+await mkdir(resolve(publicDir, 'tesseract-core'), { recursive: true });
+await copy(
+  'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm',
+  'public/tesseract-core/tesseract-core-simd-lstm.wasm',
+);
+await copy(
+  'node_modules/tesseract.js-core/tesseract-core-simd-lstm.wasm.js',
+  'public/tesseract-core/tesseract-core-simd-lstm.wasm.js',
+);
 await copy(
   'node_modules/@tesseract.js-data/eng/4.0.0/eng.traineddata.gz',
   'public/tessdata/eng.traineddata.gz',

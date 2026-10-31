@@ -25,6 +25,8 @@ jobs:
         run: npm run lint
       - name: Test
         run: npm test
+      - name: Test Supabase functions
+        run: deno test supabase/functions
       - name: Build
         run: npm run build
       - name: Install Playwright browsers

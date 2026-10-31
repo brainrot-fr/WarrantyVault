@@ -112,6 +112,7 @@ export function AuthPage() {
       if (error) {
         throw error;
       }
+
       if (native) {
         if (!data.url) throw new Error(copy.nativeAuthUrlMissing);
         await Browser.open({ url: data.url });
@@ -120,6 +121,31 @@ export function AuthPage() {
       toast.error(copy.googleSignInError, {
         description: errorMessage(error),
       });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function signInWithApple() {
+    setIsSubmitting(true);
+    try {
+      const native = Capacitor.isNativePlatform();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: native
+            ? nativeAuthRedirect('/callback', returnTo)
+            : new URL(returnTo, window.location.origin).toString(),
+          ...(native ? { skipBrowserRedirect: true } : {}),
+        },
+      });
+      if (error) throw error;
+      if (native) {
+        if (!data.url) throw new Error(copy.nativeAuthUrlMissing);
+        await Browser.open({ url: data.url });
+      }
+    } catch (error) {
+      toast.error(copy.appleSignInError, { description: errorMessage(error) });
     } finally {
       setIsSubmitting(false);
     }
@@ -177,6 +203,15 @@ export function AuthPage() {
         >
           <GoogleMark />
           {copy.continueWithGoogle}
+        </Button>
+        <Button
+          className="auth-apple"
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={() => void signInWithApple()}
+        >
+          {copy.continueWithApple}
         </Button>
 
         <div className="auth-divider"><span>{copy.orContinueWith}</span></div>

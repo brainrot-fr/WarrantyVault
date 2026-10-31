@@ -10,6 +10,17 @@ import { useTheme } from '@/app/theme-context';
 import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
 import { errorMessage } from '@/lib/errors';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -34,6 +45,23 @@ export function SettingsPage() {
     }
   }
 
+  async function deleteAccount() {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        method: 'POST',
+      });
+      if (error) throw error;
+      if (data && typeof data === 'object' && 'error' in data) {
+        throw new Error(String(data.error));
+      }
+      await supabase.auth.signOut();
+      navigate('/login', { replace: true });
+      toast.success(copy.accountDeleted);
+    } catch (error) {
+      toast.error(copy.accountDeleteError, { description: errorMessage(error) });
+    }
+  }
+
   return (
     <section className="page settings-page">
       <header className="page-header">
@@ -52,6 +80,23 @@ export function SettingsPage() {
       <section className="settings-section">
         <h2>{copy.account}</h2>
         <Button variant="outline" type="button" onClick={() => void signOut()}>{copy.signOut}</Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button variant="destructive" type="button">{copy.deleteAccount}</Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>{copy.deleteAccount}</AlertDialogTitle>
+              <AlertDialogDescription>{copy.deleteAccountDescription}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>{copy.cancel}</AlertDialogCancel>
+              <AlertDialogAction variant="destructive" onClick={() => void deleteAccount()}>
+                {copy.deleteAccountConfirm}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </section>
     </section>
   );

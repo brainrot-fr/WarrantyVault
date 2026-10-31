@@ -1,6 +1,10 @@
 .env
 .env.*
 !.env.example
+public/tesseract-core/
+public/tesseract/
+public/tessdata/
+public/pdfjs/
 **/.env
 **/.env.*
 !**/.env.example
