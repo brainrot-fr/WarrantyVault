@@ -27,6 +27,8 @@ jobs:
         run: npm test
       - name: Build
         run: npm run build
+      - name: Verify OCR build assets
+        run: npm run check:ocr-assets
       - name: Start local Supabase
         run: npx supabase start
       - name: Test database policies and migrations

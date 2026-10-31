@@ -116,7 +116,7 @@ export async function recognizeReceipt(
     const { createWorker } = await import('tesseract.js');
     const assetUrl = (path: string) => `${window.location.origin}${path}`;
     const worker = await createWorker('eng', 1, {
-      corePath: assetUrl('/tesseract-core/'),
+      corePath: assetUrl('/tesseract-core/tesseract-core-simd-lstm.wasm.js'),
       langPath: assetUrl('/tessdata'),
       workerPath: assetUrl('/tesseract/worker.min.js'),
       gzip: true,
