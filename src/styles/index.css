@@ -347,13 +347,13 @@ select {
   display: grid;
   min-height: 100dvh;
   place-items: center;
-  padding: 24px 16px;
+  padding: var(--space-6) var(--page-pad);
   background: var(--background);
 }
 
 .auth-card {
   width: min(100%, 440px);
-  padding: clamp(24px, 6vw, 40px);
+  padding: clamp(var(--space-6), 6vw, var(--space-7));
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--card);
@@ -362,15 +362,15 @@ select {
 .auth-brand,
 .app-brand {
   color: var(--foreground);
-  font-size: 16px;
+  font-size: var(--text-base);
   font-weight: 800;
   letter-spacing: -0.02em;
   text-decoration: none;
 }
 
 .auth-card h1 {
-  margin: 28px 0 8px;
-  font-size: 31px;
+  margin: var(--space-7) 0 var(--space-2);
+  font-size: var(--text-2xl);
   font-weight: 800;
   letter-spacing: -0.04em;
   line-height: 1.1;
@@ -384,8 +384,8 @@ select {
 .auth-mode-switch,
 .settings-theme-options {
   display: flex;
-  gap: 8px;
-  margin-top: 24px;
+  gap: var(--space-2);
+  margin-top: var(--space-6);
 }
 
 .auth-mode-switch > button {
@@ -394,40 +394,71 @@ select {
 
 .auth-form {
   display: grid;
-  gap: 16px;
-  margin-top: 24px;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
 }
 
 .auth-field {
   display: grid;
-  gap: 8px;
+  gap: var(--space-2);
+  min-width: 0;
 }
 
 .auth-field-error {
   margin: 0;
   color: var(--destructive);
-  font-size: 14px;
+  font-size: var(--text-sm);
 }
 
 .auth-inline-link {
   justify-self: start;
   color: var(--primary);
-  font-size: 14px;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
 .auth-submit,
-.auth-google {
+.auth-provider {
   width: 100%;
+}
+
+.auth-providers {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.auth-provider {
+  justify-content: center;
+}
+
+.auth-input-with-action {
+  position: relative;
+  min-width: 0;
+}
+
+.auth-input-with-action input {
+  padding-right: 8rem;
+}
+
+.auth-password-toggle {
+  position: absolute;
+  right: var(--space-1);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.auth-forgot-link {
+  justify-self: end;
 }
 
 .auth-divider {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin: 24px 0 16px;
+  gap: var(--space-3);
+  margin: var(--space-6) 0 var(--space-4);
   color: var(--muted-foreground);
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .auth-divider::before,

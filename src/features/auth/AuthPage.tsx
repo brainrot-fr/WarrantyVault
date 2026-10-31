@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -194,25 +194,27 @@ export function AuthPage() {
           </Button>
         </div>
 
-        <Button
-          className="auth-google"
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={() => void signInWithGoogle()}
-        >
-          <GoogleMark />
-          {copy.continueWithGoogle}
-        </Button>
-        <Button
-          className="auth-apple"
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={() => void signInWithApple()}
-        >
-          {copy.continueWithApple}
-        </Button>
+        <div className="auth-providers">
+          <Button
+            className="auth-provider"
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => void signInWithGoogle()}
+          >
+            <GoogleMark />
+            {copy.continueWithGoogle}
+          </Button>
+          <Button
+            className="auth-provider"
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => void signInWithApple()}
+          >
+            {copy.continueWithApple}
+          </Button>
+        </div>
 
         <div className="auth-divider"><span>{copy.orContinueWith}</span></div>
 
@@ -241,13 +243,21 @@ export function AuthPage() {
             registration={form.register('password')}
             type={showPassword ? 'text' : 'password'}
             autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+            action={
+              <Button
+                className="auth-password-toggle"
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? copy.hidePassword : copy.showPassword}
+              </Button>
+            }
           />
-          <Button type="button" variant="ghost" onClick={() => setShowPassword((visible) => !visible)}>
-            {showPassword ? copy.hidePassword : copy.showPassword}
-          </Button>
-
           {mode === 'sign-in' && (
-            <Link className="auth-inline-link" to="/auth/reset">{copy.forgotPassword}</Link>
+            <Link className="auth-inline-link auth-forgot-link" to="/auth/reset">{copy.forgotPassword}</Link>
           )}
           <Button className="auth-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? copy.working : mode === 'sign-in' ? copy.signIn : copy.createAccount}
@@ -266,22 +276,26 @@ interface AuthFieldProps {
   registration: UseFormRegisterReturn;
   type?: string;
   autoComplete: string;
+  action?: ReactNode;
 }
 
-function AuthField({ id, label, error, registration, type = 'text', autoComplete }: AuthFieldProps) {
+function AuthField({ id, label, error, registration, type = 'text', autoComplete, action }: AuthFieldProps) {
   const errorId = `${id}-error`;
 
   return (
     <div className="auth-field">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type={type}
-        autoComplete={autoComplete}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
-        {...registration}
-      />
+      <div className={action ? 'auth-input-with-action' : undefined}>
+        <Input
+          id={id}
+          type={type}
+          autoComplete={autoComplete}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          {...registration}
+        />
+        {action}
+      </div>
       {error && <p className="auth-field-error" id={errorId}>{error}</p>}
     </div>
   );
