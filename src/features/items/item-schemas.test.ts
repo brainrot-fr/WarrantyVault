@@ -3,13 +3,12 @@ import { itemEditSchema, itemFormSchema } from './item-schemas';
 
 const validItem = {
   name: 'Coffee machine',
-  brand: '',
+  brand: 'Samsung',
   category: '',
   merchant: '',
   serial_number: '',
-  purchase_date: '',
-  purchase_price: '',
-  currency: '',
+  purchase_date: '2025-01-15',
+  purchase_price: '1299.99',
   warranty_months: '12',
   household_id: 'a0000000-0000-4000-8000-000000000001',
   notes: '',
@@ -19,10 +18,9 @@ describe('item form schema', () => {
   it('normalizes empty optional fields and validates required household and name', () => {
     expect(itemFormSchema.parse(validItem)).toMatchObject({
       name: 'Coffee machine',
-      brand: null,
-      purchase_date: null,
-      purchase_price: null,
-      currency: null,
+      brand: 'Samsung',
+      purchase_date: '2025-01-15',
+      purchase_price: 1299.99,
       warranty_months: 12,
     });
     expect(itemFormSchema.safeParse({ ...validItem, name: '  ' }).success).toBe(false);

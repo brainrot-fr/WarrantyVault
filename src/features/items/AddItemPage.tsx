@@ -31,7 +31,6 @@ const reviewFields = [
   'merchant',
   'serial_number',
   'purchase_price',
-  'currency',
 ] as const;
 function stepLabel(step: 'capture' | 'review' | 'coverage') {
   if (step === 'capture') return copy.stepReceipt;
@@ -115,9 +114,6 @@ export function AddItemPage() {
       if (parsed.purchasePrice !== null) {
         setValue('purchase_price', String(parsed.purchasePrice), { shouldDirty: true });
       }
-      if (parsed.currency) {
-        setValue('currency', parsed.currency, { shouldDirty: true });
-      }
       if (parsed.warrantyMonths !== null) {
         setValue('warranty_months', String(parsed.warrantyMonths), { shouldDirty: true });
       }
@@ -179,6 +175,10 @@ export function AddItemPage() {
 
   function continueToReview() {
     if (isReading) return;
+    if (!itemDraft.receipt) {
+      toast.error(copy.receiptRequired);
+      return;
+    }
     updateItemDraft({ step: 'review' });
   }
 
@@ -195,6 +195,7 @@ export function AddItemPage() {
     let uploadedReceipt: Awaited<ReturnType<typeof uploadReceipt>> | null = null;
     let itemId: string;
     try {
+      if (!itemDraft.receipt) throw new Error(copy.receiptRequired);
       let householdId = values.household_id;
       if (!householdId && householdsReady && households.length === 0) {
         const { data, error } = await supabase.rpc('create_household', { name: 'Home' });
@@ -282,7 +283,7 @@ export function AddItemPage() {
             <label className="receipt-dropzone" htmlFor="receipt-file">
               <ImagePlus aria-hidden="true" />
               <span>{copy.chooseReceipt}</span>
-              <span className="receipt-dropzone-help">{copy.receiptOptional}</span>
+                      <span className="receipt-dropzone-help">{copy.receiptRequiredHint}</span>
             </label>
             {Capacitor.isNativePlatform() && (
               <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
@@ -326,9 +327,6 @@ export function AddItemPage() {
             )}
             <p className="item-optional-nudge">{copy.addReceiptNudge}</p>
             <div className="item-flow-actions">
-              <Button type="button" variant="outline" onClick={() => updateItemDraft({ step: 'review' })}>
-                {copy.skipReceipt}
-              </Button>
               <Button type="button" onClick={() => void continueToReview()} disabled={isReading}>
                 {copy.continue}<ArrowRight aria-hidden="true" />
               </Button>
@@ -378,25 +376,10 @@ export function AddItemPage() {
               group="coverage"
               ambiguousDate={Boolean(itemDraft.parsedReceipt?.ambiguousDate)}
             />
-            <div className="warranty-quick-picks" aria-label={copy.itemWarrantyLength}>
-              {[6, 12, 24, 36].map((months) => (
-                <Button
-                  key={months}
-                  type="button"
-                  variant={getValues('warranty_months') === String(months) ? 'default' : 'outline'}
-                  onClick={() => setValue('warranty_months', String(months), { shouldDirty: true, shouldValidate: true })}
-                >
-                  {months === 6 ? copy.warrantyChip6
-                    : months === 12 ? copy.warrantyChip12
-                      : months === 24 ? copy.warrantyChip24 : copy.warrantyChip36}
-                </Button>
-              ))}
-            </div>
             <div className="expiry-preview" aria-live="polite">
               <span>{copy.expiryPreview}</span>
               <strong>{expiryPreview ? formatDateOnly(expiryPreview) : copy.expiryPreviewMissing}</strong>
             </div>
-            <p className="item-optional-nudge">{copy.receiptOptional}</p>
             <div className="item-flow-actions">
               <Button type="button" variant="outline" onClick={() => void backToCapture()}>
                 <ArrowLeft aria-hidden="true" />{copy.back}

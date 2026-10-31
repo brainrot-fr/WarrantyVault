@@ -7,28 +7,42 @@ function isDateOnly(value: string) {
   return isValid(date) && format(date, 'yyyy-MM-dd') === value;
 }
 
-const optionalPrice = z.string().trim()
-  .refine((value) => value === '' || /^\d{1,10}(?:\.\d{1,2})?$/.test(value), copy.purchasePriceInvalid)
-  .transform((value) => value === '' ? null : Number(value));
+const requiredPrice = z.string().trim()
+  .refine((value) => /^\d{1,10}(?:\.\d{1,2})?$/.test(value), copy.purchasePriceRequired)
+  .transform(Number);
 
-const optionalWarranty = z.string().trim()
-  .refine((value) => value === '' || /^\d{1,4}$/.test(value), copy.warrantyMonthsInvalid)
-  .refine((value) => value === '' || Number(value) <= 1200, copy.warrantyMonthsInvalid)
-  .transform((value) => value === '' ? null : Number(value));
+const requiredWarranty = z.string().trim()
+  .refine((value) => /^\d{1,4}$/.test(value), copy.warrantyMonthsRequired)
+  .refine((value) => Number(value) <= 1200, copy.warrantyMonthsRequired)
+  .transform(Number);
+
+export const itemBrands = [
+  'Apple',
+  'Samsung',
+  'Sony',
+  'LG',
+  'Whirlpool',
+  'Bosch',
+  'Philips',
+  'HP',
+  'Lenovo',
+  'Dell',
+  'Xiaomi',
+  'OnePlus',
+  'Panasonic',
+  'Other',
+] as const;
 
 export const itemFormSchema = z.object({
   name: z.string().trim().min(1, copy.itemNameRequired).max(240, copy.itemNameTooLong),
-  brand: z.string().trim().max(200, copy.itemBrandTooLong).transform((value) => value || null),
+  brand: z.string().trim().min(1, copy.itemBrandRequired).max(200, copy.itemBrandTooLong),
   category: z.string().trim().max(120, copy.itemCategoryTooLong).transform((value) => value || null),
   merchant: z.string().trim().max(240, copy.itemMerchantTooLong).transform((value) => value || null),
   serial_number: z.string().trim().max(120, copy.itemSerialTooLong).transform((value) => value || null),
-  purchase_date: z.string().refine((value) => value === '' || isDateOnly(value), copy.purchaseDateInvalid)
-    .transform((value) => value || null),
-  purchase_price: optionalPrice,
-  currency: z.string().trim().toUpperCase()
-    .refine((value) => value === '' || /^[A-Z]{3}$/.test(value), copy.currencyInvalid)
-    .transform((value) => value || null),
-  warranty_months: optionalWarranty,
+  purchase_date: z.string().min(1, copy.purchaseDateRequired)
+    .refine(isDateOnly, copy.purchaseDateRequired),
+  purchase_price: requiredPrice,
+  warranty_months: requiredWarranty,
   household_id: z.union([z.string().uuid(copy.itemHouseholdRequired), z.literal('')])
     .optional()
     .transform((value) => value || undefined),
@@ -49,7 +63,6 @@ export const emptyItemFormValues: ItemFormInput = {
   serial_number: '',
   purchase_date: new Date().toISOString().slice(0, 10),
   purchase_price: '',
-  currency: '',
   warranty_months: '',
   household_id: '',
   notes: '',

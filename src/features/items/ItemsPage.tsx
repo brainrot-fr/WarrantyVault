@@ -46,7 +46,6 @@ function itemFormValues(item: Item): ItemEditInput {
     serial_number: item.serial_number ?? '',
     purchase_date: item.purchase_date ?? '',
     purchase_price: item.purchase_price === null ? '' : String(item.purchase_price),
-    currency: item.currency ?? '',
     warranty_months: item.warranty_months === null ? '' : String(item.warranty_months),
     notes: item.notes ?? '',
   };
