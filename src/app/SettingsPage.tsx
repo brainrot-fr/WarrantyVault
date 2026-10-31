@@ -95,6 +95,7 @@ function ProfileSettings({ userId, profile }: {
         <h2>{copy.notifications}</h2>
         <label className="settings-switch-row" htmlFor="email-reminders">
           <span>{copy.emailReminders}</span>
+          <small>{copy.reminderExplanation}</small>
           <Switch id="email-reminders" checked={emailReminders} onCheckedChange={(checked) => void updateProfile('email_reminders', checked)} />
         </label>
       </section>

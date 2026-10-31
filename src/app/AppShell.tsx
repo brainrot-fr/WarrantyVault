@@ -153,7 +153,7 @@ export function AppShell() {
         <ButtonPrimaryLink />
         <nav className="app-rail-nav">
           <WarrantiesNavLink />
-          <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
+          <ShellNavLink to="/household" label={copy.family} icon={<Users aria-hidden="true" />} />
           <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
         </nav>
         <div className="app-rail-footer">
@@ -188,10 +188,12 @@ export function AppShell() {
 
       <nav className="app-bottom-nav" aria-label={copy.primaryNavigation}>
         <WarrantiesNavLink />
-        <ShellNavLink to="/items/new" label={copy.addItem} icon={<Plus aria-hidden="true" />} />
-        <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
+        <ShellNavLink to="/household" label={copy.family} icon={<Users aria-hidden="true" />} />
         <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
       </nav>
+      <Link className="app-mobile-add" to="/items/new" aria-label={copy.addWarranty}>
+        <Plus aria-hidden="true" />
+      </Link>
     </div>
   );
 }

@@ -96,7 +96,7 @@ export function InvitesPage() {
                 </header>
                 <p className="invite-email">{copy.inviteSentTo} {normalizedEmail}</p>
                 <p className="invite-expiry">
-                  {copy.inviteExpires}: {new Date(invite.expires_at).toLocaleDateString()}
+                  {copy.inviteExpires}: {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(invite.expires_at))}
                 </p>
                 <footer className="household-card-footer">
                   <Button

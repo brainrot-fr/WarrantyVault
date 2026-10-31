@@ -34,9 +34,9 @@ const reviewFields = [
   'currency',
 ] as const;
 function stepLabel(step: 'capture' | 'review' | 'coverage') {
-  if (step === 'capture') return copy.stepCapture;
-  if (step === 'review') return copy.stepReview;
-  return copy.stepCoverage;
+  if (step === 'capture') return copy.stepReceipt;
+  if (step === 'review') return copy.stepProduct;
+  return copy.stepWarranty;
 }
 
 export function AddItemPage() {

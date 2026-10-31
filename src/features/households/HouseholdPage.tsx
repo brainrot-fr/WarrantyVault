@@ -272,11 +272,21 @@ export function HouseholdPage() {
   return (
     <section className="page household-page">
       <header className="page-header">
-      <h1>{copy.householdsTitle}</h1>
+      <h1>{copy.familyTitle}</h1>
       <p>{copy.householdsDescription}</p>
       </header>
       <Link className="auth-inline-link" to="/invites">{copy.viewMyInvites}</Link>
 
+      {householdsQuery.data?.length === 1 && (membershipsQuery.data?.filter(({ household_id }) =>
+        household_id === householdsQuery.data?.[0]?.id).length ?? 0) === 1 && (
+        <section className="household-share-card">
+          <h2>{copy.shareFamilyTitle}</h2>
+          <p>{copy.shareFamilyDescription}</p>
+        </section>
+      )}
+
+      <details className="household-create-disclosure">
+        <summary>{copy.createAnotherFamily}</summary>
       <form className="household-create-form" onSubmit={createForm.handleSubmit(submitCreate)} noValidate>
         <Label htmlFor="household-name">{copy.householdName}</Label>
         <div className="household-create-fields">
@@ -297,6 +307,7 @@ export function HouseholdPage() {
           </p>
         )}
       </form>
+      </details>
 
       {householdsQuery.isLoading ? (
         <p>{copy.householdsLoading}</p>
@@ -372,7 +383,7 @@ export function HouseholdPage() {
                         <li key={invite.id}>
                           <div>
                             <strong>{invite.email}</strong>
-                            <span>{copy.inviteExpires}: {new Date(invite.expires_at).toLocaleDateString()}</span>
+                            <span>{copy.inviteExpires}: {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(invite.expires_at))}</span>
                           </div>
                           <div className="household-person-actions">
                             <Button

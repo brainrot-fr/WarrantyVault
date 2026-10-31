@@ -3,12 +3,11 @@ import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDownToLine, ArrowLeft, CalendarDays, FileText, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, CalendarDays, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import type { Control } from 'react-hook-form';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ReceiptSlip } from '@/components/ReceiptSlip';
 import { StatusStamp } from '@/components/StatusStamp';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -98,6 +97,8 @@ function ItemList({
   const urgentItems = filteredItems
     .filter((item) => getWarrantyStatus(item.expiry_date).bucket !== 'active')
     .sort(compareUrgency);
+  const endedItems = urgentItems.filter((item) => getWarrantyStatus(item.expiry_date).bucket === 'expired');
+  const expiringSoonItems = urgentItems.filter((item) => getWarrantyStatus(item.expiry_date).bucket === 'expiring');
   const groupedItems = filteredItems
     .filter((item) => getWarrantyStatus(item.expiry_date).bucket === 'active')
     .reduce<Record<string, Item[]>>((groups, item) => {
@@ -149,11 +150,11 @@ function ItemList({
         </div>
       ) : (
         <div className="drawer-item-sections">
-          {urgentItems.length > 0 && (
+          {expiringSoonItems.length > 0 && (
             <section aria-labelledby="needs-attention-heading">
               <h2 id="needs-attention-heading">{copy.needsAttention}</h2>
               <div className="drawer-item-list">
-                {urgentItems.map((item) => (
+                {expiringSoonItems.map((item) => (
                   <ItemLink key={item.id} item={item} selected={item.id === selectedItemId} />
                 ))}
               </div>
@@ -166,6 +167,16 @@ function ItemList({
                 {categoryItems.map((item) => (
                   <ItemLink key={item.id} item={item} selected={item.id === selectedItemId} />
                 ))}
+                {endedItems.length > 0 && (
+                  <details className="ended-warranties">
+                    <summary>{copy.endedWarranties} ({endedItems.length})</summary>
+                    <div className="drawer-item-list">
+                      {endedItems.map((item) => (
+                        <ItemLink key={item.id} item={item} selected={item.id === selectedItemId} />
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             </section>
           ))}
@@ -177,19 +188,23 @@ function ItemList({
 
 function ItemLink({ item, selected }: { item: Item; selected: boolean }) {
   const status = getWarrantyStatus(item.expiry_date).bucket;
+  const expiry = item.expiry_date
+    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(`${item.expiry_date}T00:00:00`))
+    : copy.noExpiryDate;
+  const days = getWarrantyStatus(item.expiry_date).daysLeft;
   return (
     <Link
       className={`drawer-item-link${selected ? ' is-selected' : ''}`}
       to={`/items/${item.id}`}
       aria-current={selected ? 'page' : undefined}
     >
-      <ReceiptSlip
-        name={item.name}
-        brand={item.brand ?? item.merchant ?? copy.noBrand}
-        amount={formatMoney(item.purchase_price, item.currency)}
-        status={status}
-        statusLabel={statusLabel(item)}
-      />
+      <span className="warranty-row-icon" aria-hidden="true">{(item.category?.trim().charAt(0) || item.name.charAt(0)).toUpperCase()}</span>
+      <span className="warranty-row-copy">
+        <strong>{item.name}</strong>
+        <small>{status === 'expired' ? copy.warrantyExpired : `${copy.expiresOn} ${expiry}${days !== null ? ` · ${statusLabel(item)}` : ''}`}</small>
+      </span>
+      <StatusStamp status={status} label={statusLabel(item)} />
+      <ChevronRight className="warranty-row-chevron" aria-hidden="true" />
     </Link>
   );
 }
@@ -613,24 +628,13 @@ export function ItemsPage() {
 
   const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
   const item = items.find((candidate) => candidate.id === itemId);
-  const expiredCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expired').length;
   const expiringCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expiring').length;
-  const urgentItem = items
-    .filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket !== 'active')
-    .sort(compareUrgency)[0];
-
-  useEffect(() => {
-    if (itemId || itemsQuery.isLoading || !window.matchMedia('(min-width: 1024px)').matches) return;
-    const target = urgentItem ?? [...items].sort((left, right) => left.name.localeCompare(right.name))[0];
-    if (target) navigate(`/items/${target.id}`, { replace: true });
-  }, [itemId, itemsQuery.isLoading, items, navigate, urgentItem]);
-
   return (
     <div className="page warranties-page">
       <header className="page-header warranties-header">
         <div>
           <h1>{copy.warrantiesHeading}</h1>
-          <p>{copy.warrantiesSummary(expiredCount, expiringCount)}</p>
+          <p>{copy.warrantiesSummary(0, expiringCount)}</p>
         </div>
         <div className="warranties-header-controls">
           <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} aria-label={copy.searchItems} placeholder={copy.searchPlaceholder} />

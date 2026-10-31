@@ -47,7 +47,7 @@ export const emptyItemFormValues: ItemFormInput = {
   category: '',
   merchant: '',
   serial_number: '',
-  purchase_date: '',
+  purchase_date: new Date().toISOString().slice(0, 10),
   purchase_price: '',
   currency: '',
   warranty_months: '',

@@ -26,6 +26,8 @@ interface RedirectState {
 export function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -70,7 +72,7 @@ export function AuthPage() {
         }
 
         if (!data.session) {
-          toast.success(copy.signUpCheckEmail);
+          setCheckEmail(true);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -128,6 +130,18 @@ export function AuthPage() {
     form.clearErrors();
   }
 
+  if (checkEmail) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card" aria-labelledby="auth-title">
+          <h1 id="auth-title">{copy.checkYourEmail}</h1>
+          <p>{copy.signUpCheckEmail}</p>
+          <Button type="button" variant="outline" onClick={() => setCheckEmail(false)}>{copy.backToSignIn}</Button>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="auth-title">
@@ -154,6 +168,19 @@ export function AuthPage() {
           </Button>
         </div>
 
+        <Button
+          className="auth-google"
+          type="button"
+          variant="outline"
+          disabled={isSubmitting}
+          onClick={() => void signInWithGoogle()}
+        >
+          <GoogleMark />
+          {copy.continueWithGoogle}
+        </Button>
+
+        <div className="auth-divider"><span>{copy.orContinueWith}</span></div>
+
         <form className="auth-form" onSubmit={onSubmit} noValidate>
           {mode === 'sign-up' && (
             <AuthField
@@ -177,9 +204,12 @@ export function AuthPage() {
             label={copy.password}
             error={form.formState.errors.password?.message}
             registration={form.register('password')}
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
           />
+          <Button type="button" variant="ghost" onClick={() => setShowPassword((visible) => !visible)}>
+            {showPassword ? copy.hidePassword : copy.showPassword}
+          </Button>
 
           {mode === 'sign-in' && (
             <Link className="auth-inline-link" to="/auth/reset">{copy.forgotPassword}</Link>
@@ -189,17 +219,6 @@ export function AuthPage() {
           </Button>
         </form>
 
-        <div className="auth-divider"><span>{copy.orContinueWith}</span></div>
-        <Button
-          className="auth-google"
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={() => void signInWithGoogle()}
-        >
-          <GoogleMark />
-          {copy.continueWithGoogle}
-        </Button>
       </section>
     </main>
   );
