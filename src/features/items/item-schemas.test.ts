@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { itemFormSchema } from './item-schemas';
+import { itemEditSchema, itemFormSchema } from './item-schemas';
 
 const validItem = {
   name: 'Coffee machine',
@@ -26,7 +26,12 @@ describe('item form schema', () => {
       warranty_months: 12,
     });
     expect(itemFormSchema.safeParse({ ...validItem, name: '  ' }).success).toBe(false);
-    expect(itemFormSchema.safeParse({ ...validItem, household_id: '' }).success).toBe(false);
+    expect(itemFormSchema.safeParse({ ...validItem, household_id: '' }).success).toBe(true);
+  });
+
+  it('does not include household_id in edit payloads', () => {
+    const editPayload = itemEditSchema.parse({ ...validItem, household_id: 'should-not-survive' });
+    expect(editPayload).not.toHaveProperty('household_id');
   });
 
   it('validates purchase prices, calendar dates, and non-negative warranty months', () => {

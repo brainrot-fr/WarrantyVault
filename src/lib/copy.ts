@@ -364,4 +364,12 @@ export const copy = {
   settingsSaved: 'Settings saved.',
   settingsSaveError: 'Could not save settings.',
   receiptPopupBlocked: 'Your browser blocked the receipt window. Allow pop-ups and try again.',
+  errorPermission: "You don't have permission to do that.",
+  errorDuplicate: 'That already exists.',
+  errorNetwork: 'The connection failed. Check your internet connection and try again.',
+  errorSessionExpired: 'Your session expired. Sign in again and retry.',
+  errorUnexpected: 'Something went wrong. Try again.',
+  householdDeleteReceiptWarning: (count: number) =>
+    `${count} receipt${count === 1 ? '' : 's'} could not be removed from storage.`,
+  loading: 'Loading…',
 } as const;

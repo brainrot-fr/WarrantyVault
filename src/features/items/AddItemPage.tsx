@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Camera, FileText, ImagePlus, LoaderCircle, X } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
-import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,12 +40,12 @@ function stepLabel(step: 'capture' | 'review' | 'coverage') {
 }
 
 export function AddItemPage() {
-  const { activeHouseholdId, households, itemDraft, updateItemDraft } =
+  const { activeHouseholdId, households, householdsReady, itemDraft, updateItemDraft } =
     useOutletContext<AppShellContext>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const defaultHouseholdCreationRef = useRef(false);
+  const [searchParams] = useSearchParams();
   const draftValuesRef = useRef(itemDraft.values);
   const [isReading, setIsReading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,20 +87,8 @@ export function AddItemPage() {
   }, [activeHouseholdId, getValues, households, setValue]);
 
   useEffect(() => {
-    if (households.length !== 0 || defaultHouseholdCreationRef.current) return;
-    defaultHouseholdCreationRef.current = true;
-    void supabase.rpc('create_household', { name: 'Home' }).then(({ data, error }) => {
-      if (error) {
-        console.error('Could not create the default household.', error);
-        defaultHouseholdCreationRef.current = false;
-        return;
-      }
-      if (typeof data === 'string') {
-        setValue('household_id', data, { shouldDirty: true });
-        void queryClient.invalidateQueries({ queryKey: ['households'] });
-      }
-    });
-  }, [households.length, queryClient, setValue]);
+    if (searchParams.get('manual') === '1') updateItemDraft({ step: 'review' });
+  }, [searchParams, updateItemDraft]);
 
   const selectReceipt = useCallback(async (file: File) => {
     let receipt;
@@ -205,13 +193,14 @@ export function AddItemPage() {
     let itemId: string;
     try {
       let householdId = values.household_id;
-      if (!householdId) {
+      if (!householdId && householdsReady && households.length === 0) {
         const { data, error } = await supabase.rpc('create_household', { name: 'Home' });
         if (error) throw error;
         householdId = data;
         setValue('household_id', householdId);
         await queryClient.invalidateQueries({ queryKey: ['households'] });
       }
+      if (!householdId) throw new Error(copy.itemHouseholdRequired);
       if (itemDraft.receipt) {
         uploadedReceipt = await uploadReceipt(householdId, itemDraft.receipt);
       }

@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { invoke } from '@/lib/supabase/invoke';
+import { deleteReceipt } from '@/features/receipts/receipt-storage';
 import { errorMessage } from '@/lib/errors';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,6 +134,22 @@ export function HouseholdPage() {
         });
         if (error) throw error;
       } else {
+        let receiptDeleteFailures = 0;
+        const { data: items } = await supabase
+          .from('items')
+          .select('receipt_public_id, receipt_resource_type')
+          .eq('household_id', action.householdId);
+        if (items) {
+          await Promise.all(items.map(async (item) => {
+            if (!item.receipt_public_id) return;
+            try {
+              await deleteReceipt(item.receipt_public_id, item.receipt_resource_type ?? 'image');
+            } catch (error) {
+              receiptDeleteFailures += 1;
+              console.error('Could not delete a household receipt.', error);
+            }
+          }));
+        }
         const { data, error } = await supabase
           .from('households')
           .delete()
@@ -141,6 +158,7 @@ export function HouseholdPage() {
           .single();
         if (error) throw error;
         if (!data) throw new Error(copy.householdDeleteMissing);
+        return receiptDeleteFailures;
       }
     },
     onSuccess: async (_data, action) => {
@@ -161,6 +179,9 @@ export function HouseholdPage() {
             ? copy.householdLeft
             : copy.householdDeleted,
       );
+      if (typeof _data === 'number' && _data > 0) {
+        toast.warning(copy.householdDeleteReceiptWarning(_data));
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['households'] }),
         queryClient.invalidateQueries({ queryKey: ['household-members'] }),

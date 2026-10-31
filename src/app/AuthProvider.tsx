@@ -10,6 +10,7 @@ import { copy } from '@/lib/copy';
 import { parseNativeAuthRedirect } from '@/lib/native-config';
 import { supabase } from '@/lib/supabase/client';
 import { AuthContext } from './auth-context';
+import { queryClient } from '@/lib/query-client';
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const navigate = useNavigate();
@@ -23,7 +24,12 @@ export function AuthProvider({ children }: PropsWithChildren) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, nextSession) => {
       authStateVersion += 1;
       setSession(nextSession);
-      setIsRecovery(event === 'PASSWORD_RECOVERY');
+      if (event === 'PASSWORD_RECOVERY') setIsRecovery(true);
+      if (event === 'SIGNED_OUT') {
+        setIsRecovery(false);
+        queryClient.clear();
+        localStorage.removeItem('warrantyvault-household');
+      }
       setIsLoading(false);
     });
 

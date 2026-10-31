@@ -283,6 +283,16 @@ export type Database = {
         Returns: boolean
       }
       leave_household: { Args: { household_id: string }; Returns: undefined }
+      list_my_invites: {
+        Args: never
+        Returns: Array<{
+          id: string
+          household_id: string
+          household_name: string
+          inviter_name: string | null
+          expires_at: string
+        }>
+      }
       remove_member: {
         Args: { household_id: string; user_id: string }
         Returns: undefined

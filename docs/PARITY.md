@@ -52,7 +52,7 @@ Function now owns the operation.
 | Household page | Household creation, member roles, invite/revoke/resend, remove member, owner delete, and member leave rules. | `src/features/households/HouseholdPage.tsx`; household schema/RLS tests |
 | Accept invite page | `/invites` pending invite list with one-tap accept/decline and Drawer banner. | `src/features/households/InvitesPage.tsx`; RLS tests |
 | Theme context and glass design showcase | Thermal-paper design tokens, light/dark theme provider, Slip/Stamp components, and dev-only `/design`. | `src/styles`; `src/components/ReceiptSlip.tsx`; `src/components/StatusStamp.tsx`; contrast test |
-| Receipt upload and preview | Magic-byte validation, Cloudinary signed storage, PDF.js mobile-friendly preview, and optional receipts. | `src/features/receipts`; receipt validation tests |
+| Receipt upload and preview | Magic-byte validation, Cloudinary signed storage, PDF.js OCR support, and optional receipts. In-app PDF rendering is not implemented yet (planned for C5). | `src/features/receipts`; receipt validation tests |
 | OCR | Offline browser pipeline with image downscaling/grayscale, PDF text threshold, parser confidence, and ambiguous-date markers. | `src/lib/ocr`; OCR tests |
 
 ## Business rules and defects addressed
@@ -69,7 +69,7 @@ Function now owns the operation.
 | Merchant stored in notes | Dedicated `merchant` column, plus serial number and currency. | `supabase/migrations`; item form |
 | Claim pack printed only storage path | Receipt bytes are embedded as image pages or merged PDF pages. | `src/features/claim/claim-pack.test.ts` |
 | Ambiguous OCR dates guessed silently | Review UI marks ambiguous dates for confirmation. | `src/lib/ocr/parser.test.ts`; item review flow |
-| Inline PDF iframe on mobile | PDF.js renders the preview and offers an external viewer action. | Receipt viewer implementation |
+| Inline PDF iframe on mobile | Not implemented: receipts open through the existing receipt URL action pending Phase C5 PDF rendering. | `src/features/items/ItemsPage.tsx` |
 | Missing password reset/settings/removal/leave/revoke/opt-out | Reset, settings, member management, invite management, and reminder preference are implemented. | `src/features/auth`; household/settings pages; RLS tests |
 
 ## Verification status

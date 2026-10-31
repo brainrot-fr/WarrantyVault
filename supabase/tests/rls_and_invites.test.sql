@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 
-select extensions.plan(23);
+select extensions.plan(26);
 
 create temporary table pgtap_results (
   ordinal integer primary key,
@@ -167,6 +167,15 @@ select 23, extensions.is(
   '2026-01-31'::date,
   'an authenticated household member can insert and trigger expiry calculation'
 );
+update public.items
+set purchase_date = '2025-01-31', warranty_months = 12
+where id = '20000000-0000-0000-0000-000000000001';
+insert into pg_temp.pgtap_results (ordinal, output)
+select 24, extensions.is(
+  (select expiry_date from public.items where id = '20000000-0000-0000-0000-000000000001'),
+  '2026-01-31'::date,
+  'an authenticated household member can update and trigger expiry calculation'
+);
 select set_config('app.settings.invite_expiry_days', '', true);
 insert into public.household_invites (household_id, email, invited_by)
 values (
@@ -196,6 +205,28 @@ select 14, extensions.ok(
    where household_id = '10000000-0000-0000-0000-000000000001'
      and email = 'fourteen-days@example.com'),
   'invite expiration can be configured per database'
+);
+reset role;
+
+set local role authenticated;
+select set_config(
+  'request.jwt.claims',
+  '{"sub":"00000000-0000-0000-0000-000000000004","email":"newmember@example.com","role":"authenticated","email_confirmed_at":"2025-01-01T00:00:00Z"}',
+  true
+);
+insert into pg_temp.pgtap_results (ordinal, output)
+select 25, extensions.is(
+  (select household_name from public.list_my_invites()
+   where id = '30000000-0000-0000-0000-000000000001'),
+  'Other home',
+  'a verified invitee can see the addressed household name'
+);
+insert into pg_temp.pgtap_results (ordinal, output)
+select 26, extensions.is(
+  (select count(*)::integer from public.list_my_invites()
+   where household_id = '10000000-0000-0000-0000-000000000001'),
+  0,
+  'another email cannot see invites for a different address'
 );
 reset role;
 

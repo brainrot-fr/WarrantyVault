@@ -29,12 +29,17 @@ export const itemFormSchema = z.object({
     .refine((value) => value === '' || /^[A-Z]{3}$/.test(value), copy.currencyInvalid)
     .transform((value) => value || null),
   warranty_months: optionalWarranty,
-  household_id: z.string().uuid(copy.itemHouseholdRequired),
+  household_id: z.union([z.string().uuid(copy.itemHouseholdRequired), z.literal('')])
+    .optional()
+    .transform((value) => value || undefined),
   notes: z.string().max(5000, copy.itemNotesTooLong),
 });
 
 export type ItemFormInput = z.input<typeof itemFormSchema>;
 export type ItemFormOutput = z.output<typeof itemFormSchema>;
+export const itemEditSchema = itemFormSchema.omit({ household_id: true });
+export type ItemEditInput = z.input<typeof itemEditSchema>;
+export type ItemEditOutput = z.output<typeof itemEditSchema>;
 
 export const emptyItemFormValues: ItemFormInput = {
   name: '',

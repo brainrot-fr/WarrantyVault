@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowDownToLine, ArrowLeft, CalendarDays, FileText, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ReceiptSlip } from '@/components/ReceiptSlip';
@@ -21,8 +24,9 @@ import type { Database } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { errorMessage } from '@/lib/errors';
 import type { AppShellContext } from '@/app/AppShell';
+import { useAuth } from '@/app/auth-context';
 import { ItemFormFields } from './ItemFormFields';
-import { itemFormSchema, type ItemFormInput, type ItemFormOutput } from './item-schemas';
+import { itemEditSchema, type ItemEditInput, type ItemEditOutput, type ItemFormInput, type ItemFormOutput } from './item-schemas';
 
 type Item = Database['public']['Tables']['items']['Row'];
 type BucketFilter = 'all' | 'active' | 'expiring' | 'expired';
@@ -34,7 +38,7 @@ const filters: Array<{ value: BucketFilter; label: string }> = [
   { value: 'expired', label: copy.filterExpired },
 ];
 
-function itemFormValues(item: Item): ItemFormInput {
+function itemFormValues(item: Item): ItemEditInput {
   return {
     name: item.name,
     brand: item.brand ?? '',
@@ -45,7 +49,6 @@ function itemFormValues(item: Item): ItemFormInput {
     purchase_price: item.purchase_price === null ? '' : String(item.purchase_price),
     currency: item.currency ?? '',
     warranty_months: item.warranty_months === null ? '' : String(item.warranty_months),
-    household_id: item.household_id,
     notes: item.notes ?? '',
   };
 }
@@ -205,17 +208,14 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
   const progress = getCoverageProgress(item.purchase_date, item.expiry_date);
 
   async function openReceipt() {
-    const newWindow = window.open('about:blank', '_blank');
-    if (!newWindow) {
-      toast.error(copy.receiptPopupBlocked);
-      return;
-    }
-    newWindow.opener = null;
     try {
       const temporary = await getTemporaryReceiptUrl(item.id);
-      newWindow.location.replace(temporary.url);
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ url: temporary.url });
+        return;
+      }
+      window.open(temporary.url, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      newWindow.close();
       toast.error(copy.receiptOpenError, {
         description: errorMessage(error),
       });
@@ -512,8 +512,8 @@ function EditItemSheet({
   onSaved: () => Promise<void>;
 }) {
   const [isSaving, setIsSaving] = useState(false);
-  const form = useForm<ItemFormInput, unknown, ItemFormOutput>({
-    resolver: zodResolver(itemFormSchema),
+  const form = useForm<ItemEditInput, unknown, ItemEditOutput>({
+    resolver: zodResolver(itemEditSchema),
     defaultValues: itemFormValues(item),
     mode: 'onBlur',
   });
@@ -521,7 +521,7 @@ function EditItemSheet({
 
   useEffect(() => reset(itemFormValues(item)), [item, reset]);
 
-  async function save(values: ItemFormOutput) {
+  async function save(values: ItemEditOutput) {
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -558,8 +558,8 @@ function EditItemSheet({
         </SheetHeader>
         <form className="item-edit-form" onSubmit={handleSubmit(save)} noValidate>
           <ItemFormFields
-            register={register}
-            control={control}
+            register={register as unknown as import('react-hook-form').UseFormRegister<ItemFormInput>}
+            control={control as unknown as Control<ItemFormInput, unknown, ItemFormOutput>}
             errors={errors}
             households={households}
             group="all"
@@ -580,13 +580,14 @@ function EditItemSheet({
 }
 
 export function ItemsPage() {
+  const { user } = useAuth();
   const { activeHouseholdId, searchTerm, setSearchTerm, households, changeHousehold } =
     useOutletContext<AppShellContext>();
   const { itemId } = useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const itemsQuery = useQuery({
-    queryKey: ['items', activeHouseholdId],
+    queryKey: ['items', user?.id, activeHouseholdId],
     queryFn: async () => {
       const result = activeHouseholdId === 'all'
         ? await supabase.from('items').select('*').order('created_at', { ascending: false })
@@ -650,8 +651,8 @@ export function ItemsPage() {
           <h2>{copy.noItemsTitle}</h2>
           <p>{copy.noItemsDescription}</p>
           <div>
-            <Button asChild><Link to="/items/new?capture=receipt">{copy.scanReceipt}</Link></Button>
-            <Button asChild variant="outline"><Link to="/items/new">{copy.enterManually}</Link></Button>
+            <Button asChild><Link to="/items/new">{copy.scanReceipt}</Link></Button>
+            <Button asChild variant="outline"><Link to="/items/new?manual=1">{copy.enterManually}</Link></Button>
           </div>
         </section>
       ) : (

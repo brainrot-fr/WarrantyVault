@@ -36,6 +36,8 @@ npx supabase stop --no-backup
 
 Keep **Confirm email** enabled on the hosted project. The invite-accept RPC requires a verified email that matches the invite. In the Supabase Dashboard, check Authentication → Sign In / Providers → Email. Local development enables confirmations in `supabase/config.toml`.
 
+Add `https://localhost` and `capacitor://localhost` to the Supabase Edge Function `ALLOWED_ORIGINS` secret for native Android and iOS builds.
+
 ## Web app environment
 
 Copy the repository-root `.env.example` to `.env.local` and set these values for local development. Set the same public values in the deployment platform's environment settings for production:

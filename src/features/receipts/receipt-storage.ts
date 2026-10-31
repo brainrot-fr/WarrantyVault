@@ -146,9 +146,9 @@ export async function getTemporaryReceiptUrl(itemId: string): Promise<TemporaryR
   };
 }
 
-export async function deleteReceipt(publicId: string): Promise<void> {
+export async function deleteReceipt(publicId: string, resourceType = 'image'): Promise<void> {
   try {
-    await invoke('receipt-delete', { public_id: publicId, resource_type: 'image' });
+    await invoke('receipt-delete', { public_id: publicId, resource_type: resourceType });
   } catch (error) {
     throw new Error(error instanceof Error ? error.message : copy.receiptDeleteError, { cause: error });
   }
