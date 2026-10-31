@@ -23,6 +23,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { copy } from '@/lib/copy';
+import { FormField } from '@/components/responsive/FormField';
+import { ItemRow } from '@/components/responsive/ItemRow';
+import { PageHeader } from '@/components/responsive/PageHeader';
+import { StatusPill } from '@/components/responsive/StatusPill';
+import { FlowActions } from '@/components/responsive/FlowActions';
 
 function ComponentSamples() {
   return (
@@ -215,6 +220,19 @@ export function DesignShowcase() {
           <ComponentSamples />
         </section>
       </div>
+      <section className="component-sample" aria-labelledby="responsive-components">
+        <h2 id="responsive-components">{copy.responsiveSamplesTitle}</h2>
+        <PageHeader title={copy.responsiveSampleTortureHousehold} description={copy.responsiveSampleTortureEmail} actions={<Button>{copy.buttonLabel}</Button>} />
+        <ItemRow name={copy.responsiveSampleTortureName} detail={copy.responsiveSampleTortureHousehold} amount="₹1234567.89" status={copy.expiringStatus} statusTone="expiring" />
+        <StatusPill label={copy.responsiveSampleTortureEmail} tone="active" />
+        <FormField label={copy.inputLabel} htmlFor="responsive-long-field">
+          <Input id="responsive-long-field" defaultValue={copy.responsiveSampleTortureEmail} />
+        </FormField>
+        <FlowActions>
+          <Button variant="outline">{copy.returnHome}</Button>
+          <Button>{copy.buttonLabel}</Button>
+        </FlowActions>
+      </section>
     </main>
   );
 }

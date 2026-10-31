@@ -75,13 +75,11 @@
 }
 
 html {
-  min-width: 320px;
   background: var(--background);
 }
 
 body {
-  min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
   margin: 0;
   color: var(--foreground);
   background: var(--background);
@@ -352,7 +350,7 @@ select {
 
 .auth-page {
   display: grid;
-  min-height: 100svh;
+  min-height: 100dvh;
   place-items: center;
   padding: 24px 16px;
   background: var(--background);
@@ -457,14 +455,14 @@ select {
 
 .auth-loading {
   display: grid;
-  min-height: 100svh;
+  min-height: 100dvh;
   align-content: center;
   gap: 16px;
   padding: 24px;
 }
 
 .app-shell {
-  min-height: 100svh;
+  min-height: 100dvh;
   background: var(--background);
 }
 
@@ -472,7 +470,8 @@ select {
   width: 100%;
   max-width: 1120px;
   margin-inline: 0;
-  padding: 40px;
+  padding-block: var(--space-7);
+  padding-inline: var(--page-pad);
 }
 
 .page-header {
@@ -530,69 +529,13 @@ select {
   margin-top: 8px;
 }
 
-.app-topbar {
-  position: sticky;
-  z-index: 30;
-  top: 0;
-  display: flex;
-  min-height: 68px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--background);
-}
-
-.app-topbar-controls {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 12px;
-}
-
-.household-switcher {
-  width: 210px;
-  height: 44px;
-  border-radius: var(--radius);
-  background: var(--card);
-}
-
-.app-search-wrap {
-  position: relative;
-  width: min(28vw, 300px);
-}
-
-.app-search-wrap > svg {
-  position: absolute;
-  z-index: 1;
-  top: 14px;
-  left: 12px;
-  width: 16px;
-  height: 16px;
-  color: var(--muted-foreground);
-}
-
-.app-search-wrap input {
-  padding-left: 36px;
-}
-
-.account-link {
-  display: inline-flex;
-  min-width: 44px;
-  min-height: 44px;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-}
-
 .app-rail {
   position: fixed;
   top: 0;
   bottom: 0;
   left: 0;
   display: flex;
-  width: 224px;
+  width: var(--rail-w);
   flex-direction: column;
   justify-content: space-between;
   padding: 20px 12px;
@@ -655,17 +598,10 @@ select {
   background: var(--secondary);
 }
 
-.app-user-email {
-  overflow: hidden;
-  margin: 8px 4px 0;
-  color: var(--muted-foreground);
-  font-size: 12px;
-  text-overflow: ellipsis;
-}
-
 .app-content {
-  min-height: 100svh;
-  margin-left: 224px;
+  min-height: 100dvh;
+  min-width: 0;
+  margin-left: var(--rail-w);
 }
 
 .app-error-page h1 {
@@ -1645,9 +1581,8 @@ select {
   }
 
   .app-content {
-    min-height: calc(100svh - 68px);
     margin-left: 0;
-    padding: 32px 24px calc(104px + env(safe-area-inset-bottom));
+    padding: 0 0 calc(5rem + env(safe-area-inset-bottom));
   }
 
   .app-bottom-nav {
@@ -1687,7 +1622,7 @@ select {
   .drawer-list {
     position: sticky;
     top: 92px;
-    max-height: calc(100svh - 120px);
+    max-height: calc(100dvh - 7.5rem);
     overflow-y: auto;
     padding-right: 4px;
   }
@@ -1701,7 +1636,6 @@ select {
 
 @media (max-width: 767px) {
   .page {
-    padding: 24px 20px;
   }
 
   .warranties-header-controls {
@@ -1721,48 +1655,6 @@ select {
   }
 
   .app-content {
-    padding: 24px 20px calc(104px + env(safe-area-inset-bottom));
-  }
-
-  .app-search-wrap {
-    display: block;
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: auto;
-  }
-
-  .app-search-wrap input {
-    width: 100%;
-  }
-
-  .app-topbar {
-    flex-wrap: wrap;
-    align-items: center;
-  }
-
-  .household-switcher {
-    grid-column: 1;
-    grid-row: 1;
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .app-topbar-controls {
-    display: grid;
-    flex: 1;
-    grid-template-columns: minmax(0, 1fr) 44px;
-    grid-template-rows: 44px 44px;
-    gap: 8px;
-  }
-
-  .account-link {
-    grid-column: 2;
-    grid-row: 1;
-  }
-
-  .app-topbar {
-    gap: 8px;
-    padding-inline: 16px;
   }
 
   .item-detail {
@@ -1835,6 +1727,135 @@ select {
   .item-form-grid,
   .item-facts-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Phase B container layouts */
+  @container (max-width: 44rem) {
+    .item-detail-layout,
+    .drawer-list,
+    .household-card-grid,
+    .item-flow-card {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .page-header {
+    display: flex;
+    min-width: 0;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .page-header > *,
+  .page-header-actions,
+  .item-row-main,
+  .form-field {
+    min-width: 0;
+  }
+
+  .page-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .item-row {
+    display: grid;
+    width: 100%;
+    min-height: var(--control-h);
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--space-3);
+    border: 0;
+    padding: var(--space-3);
+    text-align: left;
+  }
+
+  .item-row-main,
+  .item-row-main span,
+  .item-row-main strong,
+  .item-row-amount,
+  .status-pill {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .item-flow-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .item-flow-actions > * {
+    flex: 1 1 10rem;
+    min-width: 0;
+  }
+
+  /* Phase B responsive sizing */
+  html, body, #root {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  body {
+    padding-top: max(env(safe-area-inset-top), var(--safe-area-inset-top, 0px));
+    font-size: var(--text-base);
+    overflow-wrap: anywhere;
+  }
+
+  .app-shell, .app-content, .page, .add-item-page, .item-detail,
+  .drawer-list, .household-card, .item-flow-card, .design-page {
+    min-width: 0;
+  }
+
+  .page, .add-item-page {
+    padding-inline: var(--page-pad);
+  }
+
+  .app-content {
+    padding-inline: 0;
+  }
+
+  .page-header h1 { font-size: var(--text-2xl); }
+  .app-error-page h1 { font-size: var(--text-2xl); }
+  .auth-title, .auth-card h1 { font-size: var(--text-2xl); }
+
+  .warranties-page { padding-inline: var(--page-pad); }
+  .add-item-page { padding-bottom: calc(5rem + env(safe-area-inset-bottom)); }
+  .item-detail, .drawer-list, .household-card, .item-flow-card {
+    container-type: inline-size;
+  }
+
+  .item-flow-actions,
+  .item-detail-actions,
+  .warranties-header-controls,
+  .settings-inline-action,
+  .household-create-fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .item-flow-actions > button,
+  .item-detail-actions > *,
+  .warranties-header-controls > *,
+  .settings-inline-action > *,
+  .household-create-fields > * {
+    flex: 1 1 10rem;
+    min-width: 0;
+  }
+
+  .warranties-header-controls { grid-template-columns: none; }
+
+  .item-detail-actions .status-pill,
+  .settings-inline-action button {
+    min-width: 0;
+  }
+
+  .item-name, .serial-number, .merchant-name, .household-name, .email {
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .item-detail-heading h2 {
