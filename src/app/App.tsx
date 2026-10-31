@@ -1,15 +1,11 @@
 import { Component, lazy, Suspense, type ErrorInfo, type ReactNode } from 'react';
 import { Route, Routes, useNavigate } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { queryClient } from '@/lib/query-client';
 import { Button } from '@/components/ui/button';
 import { ProtectedRoute } from './ProtectedRoute';
 import { copy } from '@/lib/copy';
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, refetchOnWindowFocus: false },
-  },
-});
 
 const DesignShowcase = lazy(() => import('@/routes/DesignShowcase').then((module) => ({
   default: module.DesignShowcase,

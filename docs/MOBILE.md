@@ -29,4 +29,13 @@ In Google Cloud Console, keep the Supabase OAuth callback configured for the Goo
 
 Before a device build, set meaningful values for `NSCameraUsageDescription`, `NSPhotoLibraryUsageDescription`, and `NSPhotoLibraryAddUsageDescription` in the iOS app's `Info.plist`. Review the generated iOS project and plugin privacy manifests before submission; Capacitor Filesystem documents `NSPrivacyAccessedAPICategoryFileTimestamp` reason `C617.1`, and Preferences may require the UserDefaults declaration. Keep the final manifest aligned with the APIs and plugins actually present in the submitted app.
 
-Apple App Review Guideline 5.1.1(v) requires apps that support account creation to let users initiate deletion of their account within the app. Settings currently has sign-out but no account-deletion flow, so an App Store submission must wait until account deletion is implemented and tested.
+Apple App Review Guideline 5.1.1(v) requires apps that support account creation to let users initiate deletion from within the app. WarrantyVault provides that flow in Settings through the `delete-account` Edge Function.
+
+## Store readiness
+
+Before submitting, verify account deletion for:
+
+- A solo household and its unshared warranty receipts.
+- A user in a shared household.
+- A shared household owner with other members, who receives the stated restriction.
+- Auth account removal only after application cleanup succeeds.

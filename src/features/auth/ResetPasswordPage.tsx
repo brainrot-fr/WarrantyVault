@@ -15,7 +15,7 @@ import { supabase } from '@/lib/supabase/client';
 import { newPasswordSchema, resetRequestSchema, type NewPasswordValues, type ResetRequestValues } from './auth-schema';
 
 export function ResetPasswordPage() {
-  const { user, isRecovery, setRecoveryMode } = useAuth();
+  const { user, isLoading, isRecovery, setRecoveryMode } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const resetForm = useForm<ResetRequestValues>({
@@ -26,6 +26,10 @@ export function ResetPasswordPage() {
     resolver: zodResolver(newPasswordSchema),
     defaultValues: { password: '', confirmPassword: '' },
   });
+
+  if (isLoading) {
+    return <main className="auth-page"><p>{copy.loading}</p></main>;
+  }
 
   if (!isRecovery && user) {
     return <Navigate to="/" replace />;

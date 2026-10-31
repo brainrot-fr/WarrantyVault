@@ -39,6 +39,31 @@ describe('parseReceiptText', () => {
     });
   });
 
+  it('parses Indian price labels and currencies', () => {
+    expect(parseReceiptText('MRP: Rs. 1,299')).toMatchObject({
+      purchasePrice: 1299,
+      currency: 'INR',
+    });
+    expect(parseReceiptText('Net amount ₹ 12,345.50')).toMatchObject({
+      purchasePrice: 12345.5,
+      currency: 'INR',
+    });
+    expect(parseReceiptText('Amount payable: Rs 599\nTotal value: 600')).toMatchObject({
+      purchasePrice: 599,
+      currency: 'INR',
+    });
+  });
+
+  it('uses labelled dates before other dates and falls back to merchant text', () => {
+    const result = parseReceiptText([
+      'Fresh Store',
+      'Invoice 31/12/2025',
+      'Date: 02/01/2026',
+    ].join('\n'));
+    expect(result.purchaseDate).toBe('2026-01-02');
+    expect(result.merchant).toBe('Fresh Store');
+  });
+
   it('parses day-first bill dates and product descriptions with merchant heuristics', () => {
     const result = parseReceiptText([
       'Bill of Supply',
@@ -82,6 +107,7 @@ describe('parseReceiptText', () => {
       merchant: null,
       purchaseDate: null,
       purchasePrice: null,
+      currency: null,
       warrantyMonths: null,
       ambiguousDate: false,
       confidence: {

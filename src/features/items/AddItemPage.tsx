@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, ArrowRight, Camera, FileText, ImagePlus, LoaderCircle, X } from 'lucide-react';
 import { useForm, useWatch } from 'react-hook-form';
-import { Link, useNavigate, useOutletContext } from 'react-router-dom';
+import { Link, useNavigate, useOutletContext, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,21 +31,20 @@ const reviewFields = [
   'merchant',
   'serial_number',
   'purchase_price',
-  'currency',
 ] as const;
 function stepLabel(step: 'capture' | 'review' | 'coverage') {
-  if (step === 'capture') return copy.stepCapture;
-  if (step === 'review') return copy.stepReview;
-  return copy.stepCoverage;
+  if (step === 'capture') return copy.stepReceipt;
+  if (step === 'review') return copy.stepProduct;
+  return copy.stepWarranty;
 }
 
 export function AddItemPage() {
-  const { activeHouseholdId, households, itemDraft, updateItemDraft } =
+  const { activeHouseholdId, households, householdsReady, itemDraft, updateItemDraft } =
     useOutletContext<AppShellContext>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const defaultHouseholdCreationRef = useRef(false);
+  const [searchParams] = useSearchParams();
   const draftValuesRef = useRef(itemDraft.values);
   const [isReading, setIsReading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -87,20 +86,8 @@ export function AddItemPage() {
   }, [activeHouseholdId, getValues, households, setValue]);
 
   useEffect(() => {
-    if (households.length !== 0 || defaultHouseholdCreationRef.current) return;
-    defaultHouseholdCreationRef.current = true;
-    void supabase.rpc('create_household', { name: 'Home' }).then(({ data, error }) => {
-      if (error) {
-        console.error('Could not create the default household.', error);
-        defaultHouseholdCreationRef.current = false;
-        return;
-      }
-      if (typeof data === 'string') {
-        setValue('household_id', data, { shouldDirty: true });
-        void queryClient.invalidateQueries({ queryKey: ['households'] });
-      }
-    });
-  }, [households.length, queryClient, setValue]);
+    if (searchParams.get('manual') === '1') updateItemDraft({ step: 'review' });
+  }, [searchParams, updateItemDraft]);
 
   const selectReceipt = useCallback(async (file: File) => {
     let receipt;
@@ -188,6 +175,10 @@ export function AddItemPage() {
 
   function continueToReview() {
     if (isReading) return;
+    if (!itemDraft.receipt) {
+      toast.error(copy.receiptRequired);
+      return;
+    }
     updateItemDraft({ step: 'review' });
   }
 
@@ -204,14 +195,16 @@ export function AddItemPage() {
     let uploadedReceipt: Awaited<ReturnType<typeof uploadReceipt>> | null = null;
     let itemId: string;
     try {
+      if (!itemDraft.receipt) throw new Error(copy.receiptRequired);
       let householdId = values.household_id;
-      if (!householdId) {
+      if (!householdId && householdsReady && households.length === 0) {
         const { data, error } = await supabase.rpc('create_household', { name: 'Home' });
         if (error) throw error;
         householdId = data;
         setValue('household_id', householdId);
         await queryClient.invalidateQueries({ queryKey: ['households'] });
       }
+      if (!householdId) throw new Error(copy.itemHouseholdRequired);
       if (itemDraft.receipt) {
         uploadedReceipt = await uploadReceipt(householdId, itemDraft.receipt);
       }
@@ -290,7 +283,7 @@ export function AddItemPage() {
             <label className="receipt-dropzone" htmlFor="receipt-file">
               <ImagePlus aria-hidden="true" />
               <span>{copy.chooseReceipt}</span>
-              <span className="receipt-dropzone-help">{copy.receiptOptional}</span>
+                      <span className="receipt-dropzone-help">{copy.receiptRequiredHint}</span>
             </label>
             {Capacitor.isNativePlatform() && (
               <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
@@ -334,9 +327,6 @@ export function AddItemPage() {
             )}
             <p className="item-optional-nudge">{copy.addReceiptNudge}</p>
             <div className="item-flow-actions">
-              <Button type="button" variant="outline" onClick={() => updateItemDraft({ step: 'review' })}>
-                {copy.skipReceipt}
-              </Button>
               <Button type="button" onClick={() => void continueToReview()} disabled={isReading}>
                 {copy.continue}<ArrowRight aria-hidden="true" />
               </Button>
@@ -386,25 +376,10 @@ export function AddItemPage() {
               group="coverage"
               ambiguousDate={Boolean(itemDraft.parsedReceipt?.ambiguousDate)}
             />
-            <div className="warranty-quick-picks" aria-label={copy.itemWarrantyLength}>
-              {[6, 12, 24, 36].map((months) => (
-                <Button
-                  key={months}
-                  type="button"
-                  variant={getValues('warranty_months') === String(months) ? 'default' : 'outline'}
-                  onClick={() => setValue('warranty_months', String(months), { shouldDirty: true, shouldValidate: true })}
-                >
-                  {months === 6 ? copy.warrantyChip6
-                    : months === 12 ? copy.warrantyChip12
-                      : months === 24 ? copy.warrantyChip24 : copy.warrantyChip36}
-                </Button>
-              ))}
-            </div>
             <div className="expiry-preview" aria-live="polite">
               <span>{copy.expiryPreview}</span>
               <strong>{expiryPreview ? formatDateOnly(expiryPreview) : copy.expiryPreviewMissing}</strong>
             </div>
-            <p className="item-optional-nudge">{copy.receiptOptional}</p>
             <div className="item-flow-actions">
               <Button type="button" variant="outline" onClick={() => void backToCapture()}>
                 <ArrowLeft aria-hidden="true" />{copy.back}

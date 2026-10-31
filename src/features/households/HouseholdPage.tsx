@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { invoke } from '@/lib/supabase/invoke';
+import { deleteReceipt } from '@/features/receipts/receipt-storage';
 import { errorMessage } from '@/lib/errors';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,6 +134,22 @@ export function HouseholdPage() {
         });
         if (error) throw error;
       } else {
+        let receiptDeleteFailures = 0;
+        const { data: items } = await supabase
+          .from('items')
+          .select('receipt_public_id, receipt_resource_type')
+          .eq('household_id', action.householdId);
+        if (items) {
+          await Promise.all(items.map(async (item) => {
+            if (!item.receipt_public_id) return;
+            try {
+              await deleteReceipt(item.receipt_public_id, item.receipt_resource_type ?? 'image');
+            } catch (error) {
+              receiptDeleteFailures += 1;
+              console.error('Could not delete a household receipt.', error);
+            }
+          }));
+        }
         const { data, error } = await supabase
           .from('households')
           .delete()
@@ -141,6 +158,7 @@ export function HouseholdPage() {
           .single();
         if (error) throw error;
         if (!data) throw new Error(copy.householdDeleteMissing);
+        return receiptDeleteFailures;
       }
     },
     onSuccess: async (_data, action) => {
@@ -161,6 +179,9 @@ export function HouseholdPage() {
             ? copy.householdLeft
             : copy.householdDeleted,
       );
+      if (typeof _data === 'number' && _data > 0) {
+        toast.warning(copy.householdDeleteReceiptWarning(_data));
+      }
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['households'] }),
         queryClient.invalidateQueries({ queryKey: ['household-members'] }),
@@ -251,11 +272,21 @@ export function HouseholdPage() {
   return (
     <section className="page household-page">
       <header className="page-header">
-      <h1>{copy.householdsTitle}</h1>
+      <h1>{copy.familyTitle}</h1>
       <p>{copy.householdsDescription}</p>
       </header>
       <Link className="auth-inline-link" to="/invites">{copy.viewMyInvites}</Link>
 
+      {householdsQuery.data?.length === 1 && (membershipsQuery.data?.filter(({ household_id }) =>
+        household_id === householdsQuery.data?.[0]?.id).length ?? 0) === 1 && (
+        <section className="household-share-card">
+          <h2>{copy.shareFamilyTitle}</h2>
+          <p>{copy.shareFamilyDescription}</p>
+        </section>
+      )}
+
+      <details className="household-create-disclosure">
+        <summary>{copy.createAnotherFamily}</summary>
       <form className="household-create-form" onSubmit={createForm.handleSubmit(submitCreate)} noValidate>
         <Label htmlFor="household-name">{copy.householdName}</Label>
         <div className="household-create-fields">
@@ -276,6 +307,7 @@ export function HouseholdPage() {
           </p>
         )}
       </form>
+      </details>
 
       {householdsQuery.isLoading ? (
         <p>{copy.householdsLoading}</p>
@@ -351,7 +383,7 @@ export function HouseholdPage() {
                         <li key={invite.id}>
                           <div>
                             <strong>{invite.email}</strong>
-                            <span>{copy.inviteExpires}: {new Date(invite.expires_at).toLocaleDateString()}</span>
+                            <span>{copy.inviteExpires}: {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(invite.expires_at))}</span>
                           </div>
                           <div className="household-person-actions">
                             <Button

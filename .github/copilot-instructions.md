@@ -5,6 +5,7 @@
 - Use React Router, TanStack Query, supabase-js, React Hook Form, Zod, date-fns, Tailwind, shadcn/ui, and Vitest.
 - Use Supabase Postgres and RLS for authorization. Do not add a custom REST backend.
 - Keep UI strings in `src/lib/copy.ts`; use “household” consistently.
+- UI follows docs/FIX_SPEC.md §C; rem-based sizing; no fixed px for text-bearing boxes.
 - Follow the specification’s phase order, business rules, accessibility, and visual design.
 - Never include secrets in source or commits. Keep local secrets in ignored `.env.local`.
 - Preserve unrelated work and never use destructive Git operations or modify `main`.

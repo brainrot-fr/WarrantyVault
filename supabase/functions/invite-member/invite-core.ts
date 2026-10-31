@@ -60,7 +60,10 @@ export function buildInviteEmail(
   const safeEmail = escapeHtml(email);
   const safeHouseholdName = escapeHtml(householdName);
   const safeInviterName = escapeHtml(inviterName);
-  const appBaseUrl = new URL(appUrl);
+  const normalizedAppUrl = /^[a-z][a-z\d+\-.]*:/i.test(appUrl)
+    ? appUrl
+    : `https://${appUrl}`;
+  const appBaseUrl = new URL(normalizedAppUrl);
   if (
     (appBaseUrl.protocol !== "https:" && appBaseUrl.protocol !== "http:") ||
     appBaseUrl.username ||

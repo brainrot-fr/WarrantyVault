@@ -25,8 +25,14 @@ jobs:
         run: npm run lint
       - name: Test
         run: npm test
+      - name: Test Supabase functions
+        run: deno test supabase/functions
       - name: Build
         run: npm run build
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+      - name: Responsive browser tests
+        run: npm run test:e2e
       - name: Verify OCR build assets
         run: npm run check:ocr-assets
       - name: Start local Supabase

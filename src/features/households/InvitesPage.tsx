@@ -13,10 +13,9 @@ import { errorMessage } from '@/lib/errors';
 interface InviteWithHousehold {
   id: string;
   household_id: string;
-  email: string;
+  household_name: string;
+  inviter_name: string | null;
   expires_at: string;
-  created_at: string;
-  household: { name: string };
 }
 
 export function InvitesPage() {
@@ -27,18 +26,9 @@ export function InvitesPage() {
     queryKey: ['addressed-invites', normalizedEmail],
     enabled: Boolean(normalizedEmail),
     queryFn: async (): Promise<InviteWithHousehold[]> => {
-      const { data, error } = await supabase
-        .from('household_invites')
-        .select('id, household_id, email, expires_at, created_at, household:households(name)')
-        .eq('email', normalizedEmail!)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.rpc('list_my_invites');
       if (error) throw error;
-      return data.map((invite) => ({
-        ...invite,
-        household: invite.household,
-      }));
+      return data;
     },
   });
   const inviteAction = useMutation({
@@ -99,14 +89,14 @@ export function InvitesPage() {
               <article className="household-card invite-card" key={invite.id}>
                 <header className="household-card-header">
                   <div>
-                    <h2>{invite.household.name}</h2>
-                    <p>{copy.invitedToJoin} {invite.household.name}</p>
+                    <h2>{invite.household_name}</h2>
+                    <p>{copy.invitedToJoin} {invite.household_name}</p>
                   </div>
                   <Badge variant="secondary">{copy.pending}</Badge>
                 </header>
-                <p className="invite-email">{copy.inviteSentTo} {invite.email}</p>
+                <p className="invite-email">{copy.inviteSentTo} {normalizedEmail}</p>
                 <p className="invite-expiry">
-                  {copy.inviteExpires}: {new Date(invite.expires_at).toLocaleDateString()}
+                  {copy.inviteExpires}: {new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(invite.expires_at))}
                 </p>
                 <footer className="household-card-footer">
                   <Button

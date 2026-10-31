@@ -11,7 +11,6 @@ export function StatusStamp({ status, label, className = '', ...props }: StatusS
   return (
     <span
       className={`status-stamp status-stamp-${status} ${className}`.trim()}
-      role="status"
       {...props}
     >
       {label}

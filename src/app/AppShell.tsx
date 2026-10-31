@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Archive, Plus, Settings, Users } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 export interface AppShellContext {
   activeHouseholdId: string;
   households: Array<{ id: string; name: string }>;
+  householdsReady: boolean;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
   changeHousehold: (value: string) => void;
@@ -51,16 +52,24 @@ export function AppShell() {
     },
   });
   const normalizedEmail = user?.email?.trim().toLowerCase();
+  const profileQuery = useQuery({
+    queryKey: ['profile', user?.id],
+    enabled: Boolean(user),
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user!.id)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
   const addressedInvitesQuery = useQuery({
     queryKey: ['addressed-invites', normalizedEmail],
     enabled: Boolean(normalizedEmail),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('household_invites')
-        .select('id')
-        .eq('email', normalizedEmail!)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString());
+      const { data, error } = await supabase.rpc('list_my_invites');
       if (error) throw error;
       return data;
     },
@@ -129,6 +138,7 @@ export function AppShell() {
   const outletContext: AppShellContext = {
     activeHouseholdId,
     households: householdsQuery.data ?? [],
+    householdsReady: householdsQuery.isSuccess,
     searchTerm,
     setSearchTerm,
     changeHousehold,
@@ -142,8 +152,8 @@ export function AppShell() {
         <Link className="app-brand" to="/" aria-label={copy.appName}>{copy.appName}</Link>
         <ButtonPrimaryLink />
         <nav className="app-rail-nav">
-          <ShellNavLink to="/" label={copy.warranties} icon={<Archive aria-hidden="true" />} end />
-          <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
+          <WarrantiesNavLink />
+          <ShellNavLink to="/household" label={copy.family} icon={<Users aria-hidden="true" />} />
           <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
         </nav>
         <div className="app-rail-footer">
@@ -151,7 +161,7 @@ export function AppShell() {
             <DropdownMenuTrigger asChild>
               <button className="app-account-trigger" type="button">
                 <Avatar><AvatarFallback>{avatarLabel}</AvatarFallback></Avatar>
-                <span><strong>{displayName(user)}</strong><small>{user?.email}</small></span>
+                <span><strong>{displayName(user, profileQuery.data?.display_name)}</strong><small>{user?.email}</small></span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -177,11 +187,13 @@ export function AppShell() {
       </main>
 
       <nav className="app-bottom-nav" aria-label={copy.primaryNavigation}>
-        <ShellNavLink to="/" label={copy.warranties} icon={<Archive aria-hidden="true" />} end />
-        <ShellNavLink to="/items/new" label={copy.addItem} icon={<Plus aria-hidden="true" />} />
-        <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
+        <WarrantiesNavLink />
+        <ShellNavLink to="/household" label={copy.family} icon={<Users aria-hidden="true" />} />
         <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
       </nav>
+      <Link className="app-mobile-add" to="/items/new" aria-label={copy.addWarranty}>
+        <Plus aria-hidden="true" />
+      </Link>
     </div>
   );
 }
@@ -194,9 +206,33 @@ function ButtonPrimaryLink() {
   );
 }
 
-function displayName(user: { user_metadata?: { display_name?: unknown } } | null) {
-  const name = user?.user_metadata?.display_name;
-  return typeof name === 'string' && name.trim() ? name.trim() : copy.account;
+function displayName(
+  user: { email?: string | null; user_metadata?: Record<string, unknown> } | null,
+  profileName?: string | null,
+) {
+  const profile = profileName?.trim();
+  if (profile) return profile;
+  const metadataName = [user?.user_metadata?.display_name, user?.user_metadata?.full_name, user?.user_metadata?.name]
+    .find((value): value is string => typeof value === 'string' && value.trim().length > 0);
+  if (metadataName) return metadataName.trim();
+  return user?.email?.split('@')[0] || copy.account;
+}
+
+function WarrantiesNavLink() {
+  const isHome = Boolean(useMatch({ path: '/', end: true }));
+  const isItem = Boolean(useMatch('/items/*'));
+  const isNewItem = Boolean(useMatch('/items/new'));
+  const isActive = isHome || (isItem && !isNewItem);
+  return (
+    <NavLink
+      className={`shell-nav-link${isActive ? ' is-active' : ''}`}
+      to="/"
+      end={false}
+    >
+      <Archive aria-hidden="true" />
+      <span>{copy.warranties}</span>
+    </NavLink>
+  );
 }
 
 interface ShellNavLinkProps {

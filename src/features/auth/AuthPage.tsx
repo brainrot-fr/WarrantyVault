@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Browser } from '@capacitor/browser';
 import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -26,6 +26,8 @@ interface RedirectState {
 export function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [checkEmail, setCheckEmail] = useState(false);
   const { user, isLoading } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -70,7 +72,7 @@ export function AuthPage() {
         }
 
         if (!data.session) {
-          toast.success(copy.signUpCheckEmail);
+          setCheckEmail(true);
         }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
@@ -110,6 +112,7 @@ export function AuthPage() {
       if (error) {
         throw error;
       }
+
       if (native) {
         if (!data.url) throw new Error(copy.nativeAuthUrlMissing);
         await Browser.open({ url: data.url });
@@ -123,9 +126,46 @@ export function AuthPage() {
     }
   }
 
+  async function signInWithApple() {
+    setIsSubmitting(true);
+    try {
+      const native = Capacitor.isNativePlatform();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: native
+            ? nativeAuthRedirect('/callback', returnTo)
+            : new URL(returnTo, window.location.origin).toString(),
+          ...(native ? { skipBrowserRedirect: true } : {}),
+        },
+      });
+      if (error) throw error;
+      if (native) {
+        if (!data.url) throw new Error(copy.nativeAuthUrlMissing);
+        await Browser.open({ url: data.url });
+      }
+    } catch (error) {
+      toast.error(copy.appleSignInError, { description: errorMessage(error) });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   function changeMode(nextMode: AuthMode) {
     setMode(nextMode);
     form.clearErrors();
+  }
+
+  if (checkEmail) {
+    return (
+      <main className="auth-page">
+        <section className="auth-card" aria-labelledby="auth-title">
+          <h1 id="auth-title">{copy.checkYourEmail}</h1>
+          <p>{copy.signUpCheckEmail}</p>
+          <Button type="button" variant="outline" onClick={() => setCheckEmail(false)}>{copy.backToSignIn}</Button>
+        </section>
+      </main>
+    );
   }
 
   return (
@@ -154,6 +194,30 @@ export function AuthPage() {
           </Button>
         </div>
 
+        <div className="auth-providers">
+          <Button
+            className="auth-provider"
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => void signInWithGoogle()}
+          >
+            <GoogleMark />
+            {copy.continueWithGoogle}
+          </Button>
+          <Button
+            className="auth-provider"
+            type="button"
+            variant="outline"
+            disabled={isSubmitting}
+            onClick={() => void signInWithApple()}
+          >
+            {copy.continueWithApple}
+          </Button>
+        </div>
+
+        <div className="auth-divider"><span>{copy.orContinueWith}</span></div>
+
         <form className="auth-form" onSubmit={onSubmit} noValidate>
           {mode === 'sign-up' && (
             <AuthField
@@ -177,29 +241,29 @@ export function AuthPage() {
             label={copy.password}
             error={form.formState.errors.password?.message}
             registration={form.register('password')}
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             autoComplete={mode === 'sign-in' ? 'current-password' : 'new-password'}
+            action={
+              <Button
+                className="auth-password-toggle"
+                type="button"
+                variant="ghost"
+                size="sm"
+                aria-label={showPassword ? copy.hidePassword : copy.showPassword}
+                onClick={() => setShowPassword((visible) => !visible)}
+              >
+                {showPassword ? copy.hidePassword : copy.showPassword}
+              </Button>
+            }
           />
-
           {mode === 'sign-in' && (
-            <Link className="auth-inline-link" to="/auth/reset">{copy.forgotPassword}</Link>
+            <Link className="auth-inline-link auth-forgot-link" to="/auth/reset">{copy.forgotPassword}</Link>
           )}
           <Button className="auth-submit" type="submit" disabled={isSubmitting}>
             {isSubmitting ? copy.working : mode === 'sign-in' ? copy.signIn : copy.createAccount}
           </Button>
         </form>
 
-        <div className="auth-divider"><span>{copy.orContinueWith}</span></div>
-        <Button
-          className="auth-google"
-          type="button"
-          variant="outline"
-          disabled={isSubmitting}
-          onClick={() => void signInWithGoogle()}
-        >
-          <GoogleMark />
-          {copy.continueWithGoogle}
-        </Button>
       </section>
     </main>
   );
@@ -212,22 +276,26 @@ interface AuthFieldProps {
   registration: UseFormRegisterReturn;
   type?: string;
   autoComplete: string;
+  action?: ReactNode;
 }
 
-function AuthField({ id, label, error, registration, type = 'text', autoComplete }: AuthFieldProps) {
+function AuthField({ id, label, error, registration, type = 'text', autoComplete, action }: AuthFieldProps) {
   const errorId = `${id}-error`;
 
   return (
     <div className="auth-field">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        type={type}
-        autoComplete={autoComplete}
-        aria-invalid={Boolean(error)}
-        aria-describedby={error ? errorId : undefined}
-        {...registration}
-      />
+      <div className={action ? 'auth-input-with-action' : undefined}>
+        <Input
+          id={id}
+          type={type}
+          autoComplete={autoComplete}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? errorId : undefined}
+          {...registration}
+        />
+        {action}
+      </div>
       {error && <p className="auth-field-error" id={errorId}>{error}</p>}
     </div>
   );

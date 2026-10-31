@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Browser } from '@capacitor/browser';
+import { Capacitor } from '@capacitor/core';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowDownToLine, ArrowLeft, CalendarDays, FileText, Pencil, Trash2 } from 'lucide-react';
+import { ArrowDownToLine, ArrowLeft, CalendarDays, ChevronRight, FileText, Pencil, Trash2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import type { Control } from 'react-hook-form';
 import { Link, useNavigate, useOutletContext, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ReceiptSlip } from '@/components/ReceiptSlip';
 import { StatusStamp } from '@/components/StatusStamp';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -21,8 +23,9 @@ import type { Database } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
 import { errorMessage } from '@/lib/errors';
 import type { AppShellContext } from '@/app/AppShell';
+import { useAuth } from '@/app/auth-context';
 import { ItemFormFields } from './ItemFormFields';
-import { itemFormSchema, type ItemFormInput, type ItemFormOutput } from './item-schemas';
+import { itemEditSchema, type ItemEditInput, type ItemEditOutput, type ItemFormInput, type ItemFormOutput } from './item-schemas';
 
 type Item = Database['public']['Tables']['items']['Row'];
 type BucketFilter = 'all' | 'active' | 'expiring' | 'expired';
@@ -34,7 +37,7 @@ const filters: Array<{ value: BucketFilter; label: string }> = [
   { value: 'expired', label: copy.filterExpired },
 ];
 
-function itemFormValues(item: Item): ItemFormInput {
+function itemFormValues(item: Item): ItemEditInput {
   return {
     name: item.name,
     brand: item.brand ?? '',
@@ -43,9 +46,7 @@ function itemFormValues(item: Item): ItemFormInput {
     serial_number: item.serial_number ?? '',
     purchase_date: item.purchase_date ?? '',
     purchase_price: item.purchase_price === null ? '' : String(item.purchase_price),
-    currency: item.currency ?? '',
     warranty_months: item.warranty_months === null ? '' : String(item.warranty_months),
-    household_id: item.household_id,
     notes: item.notes ?? '',
   };
 }
@@ -95,6 +96,8 @@ function ItemList({
   const urgentItems = filteredItems
     .filter((item) => getWarrantyStatus(item.expiry_date).bucket !== 'active')
     .sort(compareUrgency);
+  const endedItems = urgentItems.filter((item) => getWarrantyStatus(item.expiry_date).bucket === 'expired');
+  const expiringSoonItems = urgentItems.filter((item) => getWarrantyStatus(item.expiry_date).bucket === 'expiring');
   const groupedItems = filteredItems
     .filter((item) => getWarrantyStatus(item.expiry_date).bucket === 'active')
     .reduce<Record<string, Item[]>>((groups, item) => {
@@ -146,11 +149,11 @@ function ItemList({
         </div>
       ) : (
         <div className="drawer-item-sections">
-          {urgentItems.length > 0 && (
+          {expiringSoonItems.length > 0 && (
             <section aria-labelledby="needs-attention-heading">
               <h2 id="needs-attention-heading">{copy.needsAttention}</h2>
               <div className="drawer-item-list">
-                {urgentItems.map((item) => (
+                {expiringSoonItems.map((item) => (
                   <ItemLink key={item.id} item={item} selected={item.id === selectedItemId} />
                 ))}
               </div>
@@ -163,6 +166,16 @@ function ItemList({
                 {categoryItems.map((item) => (
                   <ItemLink key={item.id} item={item} selected={item.id === selectedItemId} />
                 ))}
+                {endedItems.length > 0 && (
+                  <details className="ended-warranties">
+                    <summary>{copy.endedWarranties} ({endedItems.length})</summary>
+                    <div className="drawer-item-list">
+                      {endedItems.map((item) => (
+                        <ItemLink key={item.id} item={item} selected={item.id === selectedItemId} />
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             </section>
           ))}
@@ -174,19 +187,23 @@ function ItemList({
 
 function ItemLink({ item, selected }: { item: Item; selected: boolean }) {
   const status = getWarrantyStatus(item.expiry_date).bucket;
+  const expiry = item.expiry_date
+    ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(`${item.expiry_date}T00:00:00`))
+    : copy.noExpiryDate;
+  const days = getWarrantyStatus(item.expiry_date).daysLeft;
   return (
     <Link
       className={`drawer-item-link${selected ? ' is-selected' : ''}`}
       to={`/items/${item.id}`}
       aria-current={selected ? 'page' : undefined}
     >
-      <ReceiptSlip
-        name={item.name}
-        brand={item.brand ?? item.merchant ?? copy.noBrand}
-        amount={formatMoney(item.purchase_price, item.currency)}
-        status={status}
-        statusLabel={statusLabel(item)}
-      />
+      <span className="warranty-row-icon" aria-hidden="true">{(item.category?.trim().charAt(0) || item.name.charAt(0)).toUpperCase()}</span>
+      <span className="warranty-row-copy">
+        <strong>{item.name}</strong>
+        <small>{status === 'expired' ? copy.warrantyExpired : `${copy.expiresOn} ${expiry}${days !== null ? ` · ${statusLabel(item)}` : ''}`}</small>
+      </span>
+      <StatusStamp status={status} label={statusLabel(item)} />
+      <ChevronRight className="warranty-row-chevron" aria-hidden="true" />
     </Link>
   );
 }
@@ -205,17 +222,14 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
   const progress = getCoverageProgress(item.purchase_date, item.expiry_date);
 
   async function openReceipt() {
-    const newWindow = window.open('about:blank', '_blank');
-    if (!newWindow) {
-      toast.error(copy.receiptPopupBlocked);
-      return;
-    }
-    newWindow.opener = null;
     try {
       const temporary = await getTemporaryReceiptUrl(item.id);
-      newWindow.location.replace(temporary.url);
+      if (Capacitor.isNativePlatform()) {
+        await Browser.open({ url: temporary.url });
+        return;
+      }
+      window.open(temporary.url, '_blank', 'noopener,noreferrer');
     } catch (error) {
-      newWindow.close();
       toast.error(copy.receiptOpenError, {
         description: errorMessage(error),
       });
@@ -512,8 +526,8 @@ function EditItemSheet({
   onSaved: () => Promise<void>;
 }) {
   const [isSaving, setIsSaving] = useState(false);
-  const form = useForm<ItemFormInput, unknown, ItemFormOutput>({
-    resolver: zodResolver(itemFormSchema),
+  const form = useForm<ItemEditInput, unknown, ItemEditOutput>({
+    resolver: zodResolver(itemEditSchema),
     defaultValues: itemFormValues(item),
     mode: 'onBlur',
   });
@@ -521,7 +535,7 @@ function EditItemSheet({
 
   useEffect(() => reset(itemFormValues(item)), [item, reset]);
 
-  async function save(values: ItemFormOutput) {
+  async function save(values: ItemEditOutput) {
     setIsSaving(true);
     try {
       const { error } = await supabase
@@ -558,8 +572,8 @@ function EditItemSheet({
         </SheetHeader>
         <form className="item-edit-form" onSubmit={handleSubmit(save)} noValidate>
           <ItemFormFields
-            register={register}
-            control={control}
+            register={register as unknown as import('react-hook-form').UseFormRegister<ItemFormInput>}
+            control={control as unknown as Control<ItemFormInput, unknown, ItemFormOutput>}
             errors={errors}
             households={households}
             group="all"
@@ -580,13 +594,14 @@ function EditItemSheet({
 }
 
 export function ItemsPage() {
+  const { user } = useAuth();
   const { activeHouseholdId, searchTerm, setSearchTerm, households, changeHousehold } =
     useOutletContext<AppShellContext>();
   const { itemId } = useParams();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const itemsQuery = useQuery({
-    queryKey: ['items', activeHouseholdId],
+    queryKey: ['items', user?.id, activeHouseholdId],
     queryFn: async () => {
       const result = activeHouseholdId === 'all'
         ? await supabase.from('items').select('*').order('created_at', { ascending: false })
@@ -612,24 +627,13 @@ export function ItemsPage() {
 
   const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
   const item = items.find((candidate) => candidate.id === itemId);
-  const expiredCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expired').length;
   const expiringCount = items.filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket === 'expiring').length;
-  const urgentItem = items
-    .filter((candidate) => getWarrantyStatus(candidate.expiry_date).bucket !== 'active')
-    .sort(compareUrgency)[0];
-
-  useEffect(() => {
-    if (itemId || itemsQuery.isLoading || !window.matchMedia('(min-width: 1024px)').matches) return;
-    const target = urgentItem ?? [...items].sort((left, right) => left.name.localeCompare(right.name))[0];
-    if (target) navigate(`/items/${target.id}`, { replace: true });
-  }, [itemId, itemsQuery.isLoading, items, navigate, urgentItem]);
-
   return (
     <div className="page warranties-page">
       <header className="page-header warranties-header">
         <div>
           <h1>{copy.warrantiesHeading}</h1>
-          <p>{copy.warrantiesSummary(expiredCount, expiringCount)}</p>
+          <p>{copy.warrantiesSummary(0, expiringCount)}</p>
         </div>
         <div className="warranties-header-controls">
           <Input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} aria-label={copy.searchItems} placeholder={copy.searchPlaceholder} />
@@ -650,8 +654,8 @@ export function ItemsPage() {
           <h2>{copy.noItemsTitle}</h2>
           <p>{copy.noItemsDescription}</p>
           <div>
-            <Button asChild><Link to="/items/new?capture=receipt">{copy.scanReceipt}</Link></Button>
-            <Button asChild variant="outline"><Link to="/items/new">{copy.enterManually}</Link></Button>
+            <Button asChild><Link to="/items/new">{copy.scanReceipt}</Link></Button>
+            <Button asChild variant="outline"><Link to="/items/new?manual=1">{copy.enterManually}</Link></Button>
           </div>
         </section>
       ) : (

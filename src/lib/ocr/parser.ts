@@ -7,6 +7,7 @@ export interface ParsedReceipt {
   merchant: string | null;
   purchaseDate: string | null;
   purchasePrice: number | null;
+  currency: 'INR' | 'USD' | 'EUR' | 'GBP' | null;
   warrantyMonths: number | null;
   ambiguousDate: boolean;
   confidence: {
@@ -20,9 +21,26 @@ export interface ParsedReceipt {
   };
 }
 
+function fallbackMerchant(lines: string[]): string | null {
+  return lines.map((line) => line.trim()).find((line) =>
+    line.length > 0 &&
+    !datePattern.test(line) &&
+    !/^[0-9.,\s]+$/.test(line) &&
+    !/^(?:tax\s+invoice|invoice|bill(?:\s+of\s+supply)?|receipt|gstin\b)/i.test(line)
+  ) ?? null;
+}
+
 const datePattern = /\b(\d{1,2}[/-]\d{1,2}[/-]\d{2,4}|\d{4}-\d{2}-\d{2})\b/;
 const pricePattern =
-  /\b(?:grand\s+total|total(?:\s+paid|\s+amount)?|amount\s+paid|purchase\s+price|price)\b\s*[:#=-]?\s*(?:(?:USD|CAD|AUD|EUR|GBP|INR)\s*)?(?:[$€£₹]\s*)?([0-9][0-9.,]*)(?:\s*(?:USD|CAD|AUD|EUR|GBP|INR))?/i;
+  /\b(?:grand\s+total|net\s+amount|amount\s+payable|total\s+value|mrp|total(?:\s+paid|\s+amount)?|amount\s+paid|purchase\s+price|price)\b\s*[:#=-]?\s*(?:(?:USD|CAD|AUD|EUR|GBP|INR|RS(?:\.)?)\s*)?(?:[$€£₹]\s*)?([0-9][0-9.,]*)(?:\s*(?:USD|CAD|AUD|EUR|GBP|INR|RS(?:\.)?))?/i;
+
+function parseCurrency(line: string): ParsedReceipt['currency'] {
+  if (/₹|\bINR\b|\bRs\.?\b/i.test(line)) return 'INR';
+  if (/\$|\bUSD\b/i.test(line)) return 'USD';
+  if (/€|\bEUR\b/i.test(line)) return 'EUR';
+  if (/£|\bGBP\b/i.test(line)) return 'GBP';
+  return null;
+}
 
 interface ParsedDate {
   value: string;
@@ -38,7 +56,7 @@ function isValidDate(year: number, month: number, day: number) {
     date.getUTCDate() === day;
 }
 
-function parseDate(candidate: string): ParsedDate | null {
+function parseDate(candidate: string, dayFirst = false): ParsedDate | null {
   if (/^\d{4}-\d{2}-\d{2}$/.test(candidate)) {
     const [year, month, day] = candidate.split('-').map(Number);
     return isValidDate(year, month, day) ? { value: candidate, ambiguous: false } : null;
@@ -58,8 +76,13 @@ function parseDate(candidate: string): ParsedDate | null {
     month = first;
     day = second;
   } else {
-    month = first;
-    day = second;
+    if (dayFirst) {
+      day = first;
+      month = second;
+    } else {
+      month = first;
+      day = second;
+    }
     ambiguous = true;
   }
   if (!isValidDate(year, month, day)) return null;
@@ -181,32 +204,46 @@ export function parseReceiptText(text: string | null | undefined): ParsedReceipt
   const billedFromMerchant = firstLineAfter(lines, /^billed\s+from$/i);
   let parsedDate: ParsedDate | null = null;
   let dateLine = '';
-  for (const line of lines) {
+  const datedLines = lines
+    .map((line, index) => ({
+      line,
+      index,
+      priority: /\bdate\b/i.test(line) ? 0 : /\binvoice\b/i.test(line) ? 1 : /\bbill\b/i.test(line) ? 2 : 3,
+    }))
+    .filter(({ line }) => /date|invoice|bill/i.test(line))
+    .sort((a, b) => a.priority - b.priority || a.index - b.index)
+    .map(({ line }) => line);
+  for (const line of datedLines) {
     const candidate = datePattern.exec(line);
     if (!candidate) continue;
-    parsedDate = parseDate(candidate[1]);
+    const dayFirst = /\binvoice\b|\bbill\b/i.test(clean) && !parseCurrency(clean);
+    parsedDate = parseDate(candidate[1], dayFirst);
     if (parsedDate) {
       dateLine = line;
       break;
     }
   }
   const price = parsePrice(lines);
+  const currencyLine = lines.find((line) => parseCurrency(line));
+  const currency = currencyLine ? parseCurrency(currencyLine) : null;
   const warrantyMonths = parseWarrantyMonths(clean);
+  const fallbackMerchantName = fallbackMerchant(lines);
 
   return {
     productName,
     brand: brandLabel ?? inferredBrand,
     category,
-    merchant: merchantLabel ?? billedFromMerchant,
+    merchant: merchantLabel ?? billedFromMerchant ?? fallbackMerchantName,
     purchaseDate: parsedDate?.value ?? null,
     purchasePrice: price,
+    currency,
     warrantyMonths,
     ambiguousDate: parsedDate?.ambiguous ?? false,
     confidence: {
       productName: productLine ? 'high' : productName ? 'medium' : 'none',
       brand: brandLabel ? 'high' : inferredBrand ? 'medium' : 'none',
       category: category ? 'high' : 'none',
-      merchant: merchantLabel ? 'high' : billedFromMerchant ? 'medium' : 'none',
+      merchant: merchantLabel ? 'high' : billedFromMerchant ? 'medium' : fallbackMerchantName ? 'low' : 'none',
       purchaseDate: parsedDate
         ? parsedDate.ambiguous
           ? 'low'

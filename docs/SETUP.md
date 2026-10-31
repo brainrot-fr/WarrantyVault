@@ -36,6 +36,8 @@ npx supabase stop --no-backup
 
 Keep **Confirm email** enabled on the hosted project. The invite-accept RPC requires a verified email that matches the invite. In the Supabase Dashboard, check Authentication → Sign In / Providers → Email. Local development enables confirmations in `supabase/config.toml`.
 
+Add `https://localhost` and `capacitor://localhost` to the Supabase Edge Function `ALLOWED_ORIGINS` secret for native Android and iOS builds.
+
 ## Web app environment
 
 Copy the repository-root `.env.example` to `.env.local` and set these values for local development. Set the same public values in the deployment platform's environment settings for production:
@@ -108,6 +110,16 @@ npx supabase functions serve invite-member --env-file supabase/functions/.env.lo
 ```
 
 This file is ignored by Git. Configure `ALLOWED_ORIGINS` for the actual local port in use (Vite may select another port if 5173 is occupied). Production and preview origins must be listed exactly.
+
+## Account deletion function
+
+Deploy `delete-account` with JWT verification enabled:
+
+```bash
+npx supabase functions deploy delete-account
+```
+
+The function removes Cloudinary receipts owned by the user where possible, removes solo households, and then removes the Supabase Auth account. A household owner who still has other members must transfer ownership or remove those members before deleting the account. Callers receive a plain error when that restriction applies.
 
 ## Cloudinary receipt storage
 
