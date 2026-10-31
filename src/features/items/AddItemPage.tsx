@@ -115,6 +115,9 @@ export function AddItemPage() {
       if (parsed.purchasePrice !== null) {
         setValue('purchase_price', String(parsed.purchasePrice), { shouldDirty: true });
       }
+      if (parsed.currency) {
+        setValue('currency', parsed.currency, { shouldDirty: true });
+      }
       if (parsed.warrantyMonths !== null) {
         setValue('warranty_months', String(parsed.warrantyMonths), { shouldDirty: true });
       }
