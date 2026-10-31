@@ -85,10 +85,11 @@ export function InvitesPage() {
   }, [invitesQuery.error]);
 
   return (
-    <section className="app-placeholder household-page">
-      <p className="app-section-label">{copy.household}</p>
+    <section className="page household-page">
+      <header className="page-header">
       <h1>{copy.yourInvites}</h1>
       <p>{copy.invitesDescription}</p>
+      </header>
       {invitesQuery.isLoading ? (
         <p>{copy.invitesLoading}</p>
       ) : invitesQuery.data?.length ? (

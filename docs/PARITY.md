@@ -4,6 +4,7 @@
 
 - P13 advances directly beyond prior phases and records this repair/structure pass here rather than waiting for the phase numbers in section 8.
 - P13 database verification could not run locally until Supabase Docker services are started.
+- P13B preserves the existing household switcher selection behavior in the Warranties header rather than the removed top bar.
 
 This matrix records the legacy backend routes, frontend surfaces, and tested business
 behaviour against the React + Supabase replacement. “Replaced” means the old HTTP

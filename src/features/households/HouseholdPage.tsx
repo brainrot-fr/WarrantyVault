@@ -249,10 +249,11 @@ export function HouseholdPage() {
   }
 
   return (
-    <section className="app-placeholder household-page">
-      <p className="app-section-label">{copy.household}</p>
+    <section className="page household-page">
+      <header className="page-header">
       <h1>{copy.householdsTitle}</h1>
       <p>{copy.householdsDescription}</p>
+      </header>
       <Link className="auth-inline-link" to="/invites">{copy.viewMyInvites}</Link>
 
       <form className="household-create-form" onSubmit={createForm.handleSubmit(submitCreate)} noValidate>

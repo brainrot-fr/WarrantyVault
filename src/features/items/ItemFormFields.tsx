@@ -1,7 +1,6 @@
 import { CalendarDays } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { Controller, type Control, type FieldErrors, type UseFormRegister } from 'react-hook-form';
-import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -183,9 +182,6 @@ export function ItemFormFields({
                   </SelectContent>
                 </Select>
                 <FieldError id={errorId} message={typeof error === 'string' ? error : undefined} />
-                {households.length === 0 && (
-                  <Link className="item-field-hint" to="/household">{copy.householdRequiredLink}</Link>
-                )}
               </div>
             );
           }}

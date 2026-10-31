@@ -28,10 +28,11 @@ export function SettingsPage() {
   }
 
   return (
-    <section className="app-placeholder">
-      <p className="app-section-label">{copy.settings}</p>
+    <section className="page">
+      <header className="page-header">
       <h1>{copy.settingsTitle}</h1>
       <p>{copy.emailAddress}: {user?.email}</p>
+      </header>
       <p>{copy.displayName}: {typeof displayName === 'string' ? displayName : copy.notSet}</p>
       <div className="settings-theme">
         <p>{copy.themePreference}</p>

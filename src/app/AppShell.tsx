@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Archive, House, Plus, Search, Settings, Users } from 'lucide-react';
+import { Archive, Plus, Settings, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/app/auth-context';
 import {
   allHouseholdsValue,
@@ -18,12 +17,14 @@ import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
 import { createEmptyItemDraft, type ItemDraft } from '@/features/items/item-draft';
 import { errorMessage } from '@/lib/errors';
+import { Button } from '@/components/ui/button';
 
 export interface AppShellContext {
   activeHouseholdId: string;
   households: Array<{ id: string; name: string }>;
   searchTerm: string;
   setSearchTerm: (value: string) => void;
+  changeHousehold: (value: string) => void;
   itemDraft: ItemDraft;
   updateItemDraft: (patch: Partial<ItemDraft>) => void;
 }
@@ -31,6 +32,7 @@ export interface AppShellContext {
 export function AppShell() {
   const { user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [selectedHouseholdId, setSelectedHouseholdId] = useState(readHouseholdSelection);
   const [searchTerm, setSearchTerm] = useState('');
   const [itemDraft, setItemDraft] = useState(createEmptyItemDraft);
@@ -93,6 +95,24 @@ export function AppShell() {
     setItemDraft((current) => ({ ...current, ...patch }));
   }, []);
 
+  const changeHousehold = useCallback((value: string) => {
+    setSelectedHouseholdId(value);
+    try {
+      persistHouseholdSelection(value);
+    } catch (error) {
+      toast.error(copy.householdPreferenceWriteError, { description: errorMessage(error) });
+    }
+  }, []);
+
+  async function signOut() {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error(copy.signOutError, { description: errorMessage(error) });
+      return;
+    }
+    navigate('/login', { replace: true });
+  }
+
   useEffect(() => {
     if (!isSelectedHouseholdAvailable && selectedHouseholdId !== allHouseholdsValue) {
       try {
@@ -105,78 +125,42 @@ export function AppShell() {
     }
   }, [isSelectedHouseholdAvailable, selectedHouseholdId]);
 
-  function changeHousehold(value: string) {
-    setSelectedHouseholdId(value);
-    try {
-      persistHouseholdSelection(value);
-    } catch (error) {
-      toast.error(copy.householdPreferenceWriteError, {
-        description: errorMessage(error),
-      });
-    }
-  }
-
-  const householdName = householdsQuery.data?.find(
-    (household) => household.id === activeHouseholdId,
-  )?.name;
   const avatarLabel = user?.email?.slice(0, 1).toUpperCase() ?? 'U';
   const outletContext: AppShellContext = {
     activeHouseholdId,
     households: householdsQuery.data ?? [],
     searchTerm,
     setSearchTerm,
+    changeHousehold,
     itemDraft,
     updateItemDraft,
   };
 
   return (
     <div className="app-shell">
-      <header className="app-topbar">
-        <Link className="app-brand" to="/" aria-label={copy.appName}>{copy.appName}</Link>
-        <div className="app-topbar-controls">
-          <Select value={activeHouseholdId} onValueChange={changeHousehold}>
-            <SelectTrigger className="household-switcher" aria-label={copy.selectHouseholdLabel}>
-              <House aria-hidden="true" />
-              <SelectValue placeholder={copy.allHouseholds}>
-                {activeHouseholdId === allHouseholdsValue ? copy.allHouseholds : householdName}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={allHouseholdsValue}>{copy.allHouseholds}</SelectItem>
-              {householdsQuery.data?.map((household) => (
-                <SelectItem key={household.id} value={household.id}>{household.name}</SelectItem>
-              ))}
-              {householdsQuery.isLoading && (
-                <SelectItem value="loading" disabled>{copy.householdsLoading}</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-          <div className="app-search-wrap">
-            <Search aria-hidden="true" />
-            <Input
-              aria-label={copy.searchItems}
-              placeholder={copy.searchPlaceholder}
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-            />
-          </div>
-          <NavLink className="account-link" to="/settings" aria-label={copy.openSettings}>
-            <Avatar>
-              <AvatarFallback>{avatarLabel}</AvatarFallback>
-            </Avatar>
-          </NavLink>
-        </div>
-      </header>
-
       <aside className="app-rail" aria-label={copy.primaryNavigation}>
+        <Link className="app-brand" to="/" aria-label={copy.appName}>{copy.appName}</Link>
+        <ButtonPrimaryLink />
         <nav className="app-rail-nav">
           <ShellNavLink to="/" label={copy.drawer} icon={<Archive aria-hidden="true" />} end />
-          <ShellNavLink to="/items/new" label={copy.addItem} icon={<Plus aria-hidden="true" />} />
           <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
+          <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
         </nav>
         <div className="app-rail-footer">
-          <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
-          <p className="app-user-email">{user?.email}</p>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="app-account-trigger" type="button">
+                <Avatar><AvatarFallback>{avatarLabel}</AvatarFallback></Avatar>
+                <span><strong>{displayName(user)}</strong><small>{user?.email}</small></span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel>{copy.signedInAs}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => navigate('/settings')}>{copy.settings}</DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => void signOut()}>{copy.signOut}</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </aside>
 
@@ -196,9 +180,23 @@ export function AppShell() {
         <ShellNavLink to="/" label={copy.drawer} icon={<Archive aria-hidden="true" />} end />
         <ShellNavLink to="/items/new" label={copy.addItem} icon={<Plus aria-hidden="true" />} />
         <ShellNavLink to="/household" label={copy.household} icon={<Users aria-hidden="true" />} />
+        <ShellNavLink to="/settings" label={copy.settings} icon={<Settings aria-hidden="true" />} />
       </nav>
     </div>
   );
+}
+
+function ButtonPrimaryLink() {
+  return (
+    <Button asChild className="app-rail-add">
+      <Link to="/items/new"><Plus aria-hidden="true" />{copy.addWarranty}</Link>
+    </Button>
+  );
+}
+
+function displayName(user: { user_metadata?: { display_name?: unknown } } | null) {
+  const name = user?.user_metadata?.display_name;
+  return typeof name === 'string' && name.trim() ? name.trim() : copy.account;
 }
 
 interface ShellNavLinkProps {
@@ -218,15 +216,5 @@ function ShellNavLink({ to, label, icon, end = false }: ShellNavLinkProps) {
       {icon}
       <span>{label}</span>
     </NavLink>
-  );
-}
-
-export function ShellPlaceholder({ title, description }: { title: string; description: string }) {
-  return (
-    <section className="app-placeholder">
-      <p className="app-section-label">{copy.appName}</p>
-      <h1>{title}</h1>
-      <p>{description}</p>
-    </section>
   );
 }

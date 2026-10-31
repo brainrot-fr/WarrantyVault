@@ -45,6 +45,7 @@ export function AddItemPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const defaultHouseholdCreationRef = useRef(false);
   const draftValuesRef = useRef(itemDraft.values);
   const [isReading, setIsReading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +85,22 @@ export function AddItemPage() {
       setValue('household_id', activeHouseholdId, { shouldDirty: false });
     }
   }, [activeHouseholdId, getValues, households, setValue]);
+
+  useEffect(() => {
+    if (households.length !== 0 || defaultHouseholdCreationRef.current) return;
+    defaultHouseholdCreationRef.current = true;
+    void supabase.rpc('create_household', { name: 'Home' }).then(({ data, error }) => {
+      if (error) {
+        console.error('Could not create the default household.', error);
+        defaultHouseholdCreationRef.current = false;
+        return;
+      }
+      if (typeof data === 'string') {
+        setValue('household_id', data, { shouldDirty: true });
+        void queryClient.invalidateQueries({ queryKey: ['households'] });
+      }
+    });
+  }, [households.length, queryClient, setValue]);
 
   const selectReceipt = useCallback(async (file: File) => {
     let receipt;
@@ -187,13 +204,22 @@ export function AddItemPage() {
     let uploadedReceipt: Awaited<ReturnType<typeof uploadReceipt>> | null = null;
     let itemId: string;
     try {
+      let householdId = values.household_id;
+      if (!householdId) {
+        const { data, error } = await supabase.rpc('create_household', { name: 'Home' });
+        if (error) throw error;
+        householdId = data;
+        setValue('household_id', householdId);
+        await queryClient.invalidateQueries({ queryKey: ['households'] });
+      }
       if (itemDraft.receipt) {
-        uploadedReceipt = await uploadReceipt(values.household_id, itemDraft.receipt);
+        uploadedReceipt = await uploadReceipt(householdId, itemDraft.receipt);
       }
       const { data, error } = await supabase
         .from('items')
         .insert({
           ...values,
+          household_id: householdId,
           notes: values.notes || null,
           ...(uploadedReceipt ?? {}),
         })
@@ -383,7 +409,7 @@ export function AddItemPage() {
               <Button type="button" variant="outline" onClick={() => void backToCapture()}>
                 <ArrowLeft aria-hidden="true" />{copy.back}
               </Button>
-              <Button type="submit" disabled={isSaving || households.length === 0}>
+              <Button type="submit" disabled={isSaving}>
                 {isSaving ? copy.savingItem : copy.saveItem}
               </Button>
             </div>
