@@ -41,8 +41,13 @@ export async function sendBrevoEmail(message: BrevoEmailContent) {
       status: response.status,
       detail,
     });
-    throw new Error(
-      `Brevo rejected the transactional email with status ${response.status}.`,
-    );
+    throw new BrevoEmailError(response.status, detail);
+  }
+}
+
+export class BrevoEmailError extends Error {
+  constructor(readonly status: number, readonly providerDetail: string) {
+    super(`Brevo rejected the transactional email with status ${status}.`);
+    this.name = "BrevoEmailError";
   }
 }

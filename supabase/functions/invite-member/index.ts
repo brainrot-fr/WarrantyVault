@@ -1,5 +1,5 @@
 import { createCallerClient, createServiceClient } from "../_shared/auth.ts";
-import { sendBrevoEmail } from "../_shared/brevo.ts";
+import { BrevoEmailError, sendBrevoEmail } from "../_shared/brevo.ts";
 import { getCorsHeaders } from "../_shared/cors.ts";
 import { buildInviteEmail, parseInviteRequest } from "./invite-core.ts";
 
@@ -302,7 +302,9 @@ async function rollbackAndRespond(
   return jsonResponse(
     {
       error:
-        "Could not send the invitation email. Check the email service configuration and retry.",
+        cause instanceof BrevoEmailError
+          ? `The email service rejected the invitation (Brevo status ${cause.status}). Check that the sender address is verified and the Brevo API key is active.`
+          : "Could not send the invitation email. Check the email service configuration and retry.",
     },
     502,
     cors,
