@@ -1,5 +1,10 @@
 # Legacy parity matrix
 
+## P13 prompt deviations
+
+- P13 advances directly beyond prior phases and records this repair/structure pass here rather than waiting for the phase numbers in section 8.
+- P13 database verification could not run locally until Supabase Docker services are started.
+
 This matrix records the legacy backend routes, frontend surfaces, and tested business
 behaviour against the React + Supabase replacement. “Replaced” means the old HTTP
 endpoint is intentionally gone because Supabase client access, RLS, RPCs, or an Edge

@@ -17,6 +17,7 @@ import {
 import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
 import { createEmptyItemDraft, type ItemDraft } from '@/features/items/item-draft';
+import { errorMessage } from '@/lib/errors';
 
 export interface AppShellContext {
   activeHouseholdId: string;
@@ -68,9 +69,7 @@ export function AppShell() {
   useEffect(() => {
     if (householdsQuery.isError) {
       toast.error(copy.householdsLoadError, {
-        description: householdsQuery.error instanceof Error
-          ? householdsQuery.error.message
-          : String(householdsQuery.error),
+        description: errorMessage(householdsQuery.error),
       });
     }
   }, [householdsQuery.error, householdsQuery.isError]);
@@ -78,9 +77,7 @@ export function AppShell() {
   useEffect(() => {
     if (addressedInvitesQuery.isError) {
       toast.error(copy.inviteListError, {
-        description: addressedInvitesQuery.error instanceof Error
-          ? addressedInvitesQuery.error.message
-          : String(addressedInvitesQuery.error),
+        description: errorMessage(addressedInvitesQuery.error),
       });
     }
   }, [addressedInvitesQuery.error, addressedInvitesQuery.isError]);
@@ -102,7 +99,7 @@ export function AppShell() {
         persistHouseholdSelection(allHouseholdsValue);
       } catch (error) {
         toast.error(copy.householdPreferenceWriteError, {
-          description: error instanceof Error ? error.message : String(error),
+          description: errorMessage(error),
         });
       }
     }
@@ -114,7 +111,7 @@ export function AppShell() {
       persistHouseholdSelection(value);
     } catch (error) {
       toast.error(copy.householdPreferenceWriteError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     }
   }

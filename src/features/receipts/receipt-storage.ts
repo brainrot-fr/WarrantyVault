@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client';
+import { invoke } from '@/lib/supabase/invoke';
 import { copy } from '@/lib/copy';
 import { MAX_RECEIPT_BYTES, type ValidatedReceipt } from './receipt-validation';
 
@@ -64,10 +64,12 @@ export async function uploadReceipt(
   householdId: string,
   receipt: ValidatedReceipt,
 ): Promise<ReceiptMetadata> {
-  const { data, error } = await supabase.functions.invoke<unknown>('cloudinary-sign', {
-    body: { household_id: householdId },
-  });
-  if (error) throw new Error(copy.receiptUploadPrepareError);
+  let data: unknown;
+  try {
+    data = await invoke<unknown>('cloudinary-sign', { household_id: householdId });
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : copy.receiptUploadPrepareError, { cause: error });
+  }
   if (!isCloudinarySignature(data, householdId)) {
     throw new Error(copy.receiptUploadSignatureInvalid);
   }
@@ -119,10 +121,12 @@ export async function uploadReceipt(
 }
 
 export async function getTemporaryReceiptUrl(itemId: string): Promise<TemporaryReceiptUrl> {
-  const { data, error } = await supabase.functions.invoke<unknown>('cloudinary-url', {
-    body: { item_id: itemId },
-  });
-  if (error) throw new Error(copy.receiptOpenError);
+  let data: unknown;
+  try {
+    data = await invoke<unknown>('cloudinary-url', { item_id: itemId });
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : copy.receiptOpenError, { cause: error });
+  }
   if (
     typeof data !== 'object' ||
     data === null ||
@@ -143,8 +147,9 @@ export async function getTemporaryReceiptUrl(itemId: string): Promise<TemporaryR
 }
 
 export async function deleteReceipt(publicId: string): Promise<void> {
-  const { error } = await supabase.functions.invoke('receipt-delete', {
-    body: { public_id: publicId, resource_type: 'image' },
-  });
-  if (error) throw new Error(copy.receiptDeleteError);
+  try {
+    await invoke('receipt-delete', { public_id: publicId, resource_type: 'image' });
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : copy.receiptDeleteError, { cause: error });
+  }
 }

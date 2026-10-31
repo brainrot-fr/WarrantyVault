@@ -8,6 +8,7 @@ import { useAuth } from '@/app/auth-context';
 import { persistHouseholdSelection } from '@/app/household-selection';
 import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
+import { errorMessage } from '@/lib/errors';
 
 interface InviteWithHousehold {
   id: string;
@@ -58,7 +59,7 @@ export function InvitesPage() {
           persistHouseholdSelection(householdId);
         } catch (error) {
           toast.error(copy.householdPreferenceWriteError, {
-            description: error instanceof Error ? error.message : String(error),
+            description: errorMessage(error),
           });
         }
       }

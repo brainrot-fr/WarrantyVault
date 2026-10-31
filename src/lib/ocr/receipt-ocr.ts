@@ -133,6 +133,8 @@ export async function recognizeReceipt(
       await worker.terminate();
     }
   } catch (error) {
+    console.error('Receipt OCR failed.', error);
+    console.error('Receipt OCR cause.', error instanceof Error ? error.cause : undefined);
     throw new Error(copy.receiptOcrError, { cause: error });
   }
 }

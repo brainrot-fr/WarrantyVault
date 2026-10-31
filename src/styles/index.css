@@ -98,14 +98,6 @@ select {
 }
 
 button,
-input,
-textarea,
-select,
-[role="combobox"] {
-  min-height: 44px;
-}
-
-button,
 a,
 input[type="file"],
 select {

@@ -21,6 +21,7 @@ import type { AppShellContext } from '@/app/AppShell';
 import { supabase } from '@/lib/supabase/client';
 import { ItemFormFields } from './ItemFormFields';
 import { createEmptyItemDraft } from './item-draft';
+import { errorMessage } from '@/lib/errors';
 import { emptyItemFormValues, itemFormSchema, type ItemFormInput, type ItemFormOutput } from './item-schemas';
 
 const reviewFields = [
@@ -89,7 +90,7 @@ export function AddItemPage() {
     try {
       receipt = await validateReceiptFile(file);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : copy.receiptFileUnsupported);
+      toast.error(errorMessage(error) || copy.receiptFileUnsupported);
       if (fileInputRef.current) fileInputRef.current.value = '';
       return;
     }
@@ -113,7 +114,9 @@ export function AddItemPage() {
         setValue('warranty_months', String(parsed.warrantyMonths), { shouldDirty: true });
       }
       toast.success(copy.receiptScanComplete);
-    } catch {
+    } catch (error) {
+      console.error('Receipt OCR failed.', error);
+      console.error('Receipt OCR cause.', error instanceof Error ? error.cause : undefined);
       toast.error(copy.receiptScanFailed);
     } finally {
       setIsReading(false);
@@ -133,7 +136,7 @@ export function AddItemPage() {
       }
       void receiptPhotoToFile(event.data).then(selectReceipt).catch((error: unknown) => {
         toast.error(copy.nativeCameraError, {
-          description: error instanceof Error ? error.message : String(error),
+          description: errorMessage(error),
         });
       });
     }).then((listener) => {
@@ -141,7 +144,7 @@ export function AddItemPage() {
       else void listener.remove();
     }).catch((error: unknown) => {
       toast.error(copy.nativeCameraError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     });
 
@@ -156,7 +159,7 @@ export function AddItemPage() {
       await selectReceipt(await captureReceiptPhoto());
     } catch (error) {
       toast.error(copy.nativeCameraError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     }
   }
@@ -208,7 +211,7 @@ export function AddItemPage() {
         }
       }
       toast.error(copy.itemSaveError, {
-        description: error instanceof Error ? error.message : copy.receiptUploadFailed,
+        description: errorMessage(error),
       });
       setIsSaving(false);
       return;
@@ -263,11 +266,6 @@ export function AddItemPage() {
               <span>{copy.chooseReceipt}</span>
               <span className="receipt-dropzone-help">{copy.receiptOptional}</span>
             </label>
-            {Capacitor.isNativePlatform() && (
-              <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
-                <Camera aria-hidden="true" />{copy.takeReceiptPhoto}
-              </Button>
-            )}
             {Capacitor.isNativePlatform() && (
               <Button type="button" variant="outline" onClick={() => void takeReceiptPhoto()}>
                 <Camera aria-hidden="true" />{copy.takeReceiptPhoto}

@@ -13,6 +13,7 @@ import { copy } from '@/lib/copy';
 import { nativeAuthRedirect } from '@/lib/native-config';
 import { supabase } from '@/lib/supabase/client';
 import { authSchema, type AuthFormValues } from './auth-schema';
+import { errorMessage } from '@/lib/errors';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -85,7 +86,7 @@ export function AuthPage() {
       }
     } catch (error) {
       toast.error(mode === 'sign-in' ? copy.signInError : copy.signUpError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     } finally {
       setIsSubmitting(false);
@@ -115,7 +116,7 @@ export function AuthPage() {
       }
     } catch (error) {
       toast.error(copy.googleSignInError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     } finally {
       setIsSubmitting(false);

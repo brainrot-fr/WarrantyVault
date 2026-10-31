@@ -5,6 +5,7 @@ import { useAuth } from '@/app/auth-context';
 import { useTheme } from '@/app/theme-context';
 import { copy } from '@/lib/copy';
 import { supabase } from '@/lib/supabase/client';
+import { errorMessage } from '@/lib/errors';
 
 export function SettingsPage() {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ export function SettingsPage() {
       navigate('/login', { replace: true });
     } catch (error) {
       toast.error(copy.signOutError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     }
   }

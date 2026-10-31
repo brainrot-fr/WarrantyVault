@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 
-select extensions.plan(22);
+select extensions.plan(23);
 
 create temporary table pgtap_results (
   ordinal integer primary key,
@@ -150,6 +150,22 @@ select 12, extensions.throws_ok(
   '22023',
   null,
   'expired invites cannot be accepted'
+);
+insert into public.items (household_id, name, purchase_date, warranty_months, created_by)
+values (
+  '10000000-0000-0000-0000-000000000001',
+  'Trigger privilege item',
+  '2025-01-31',
+  12,
+  '00000000-0000-0000-0000-000000000002'
+);
+insert into pg_temp.pgtap_results (ordinal, output)
+select 23, extensions.is(
+  (select expiry_date from public.items
+   where household_id = '10000000-0000-0000-0000-000000000001'
+     and name = 'Trigger privilege item'),
+  '2026-01-31'::date,
+  'an authenticated household member can insert and trigger expiry calculation'
 );
 select set_config('app.settings.invite_expiry_days', '', true);
 insert into public.household_invites (household_id, email, invited_by)

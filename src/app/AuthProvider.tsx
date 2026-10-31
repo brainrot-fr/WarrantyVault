@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core';
 import { useNavigate } from 'react-router-dom';
 import type { Session } from '@supabase/supabase-js';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/errors';
 import { copy } from '@/lib/copy';
 import { parseNativeAuthRedirect } from '@/lib/native-config';
 import { supabase } from '@/lib/supabase/client';
@@ -41,7 +42,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
     }).catch((error: unknown) => {
       if (isMounted) {
         toast.error(copy.authSessionError, {
-          description: error instanceof Error ? error.message : String(error),
+          description: errorMessage(error),
         });
         setIsLoading(false);
       }
@@ -78,7 +79,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
         });
       } catch (error) {
         toast.error(copy.nativeAuthError, {
-          description: error instanceof Error ? error.message : String(error),
+          description: errorMessage(error),
         });
       }
     }
@@ -90,7 +91,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       else void listener.remove();
     }).catch((error: unknown) => {
       toast.error(copy.nativeAuthError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     });
 
@@ -99,7 +100,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       return undefined;
     }).catch((error: unknown) => {
       toast.error(copy.nativeAuthError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     });
 

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type PropsWithChildren } from 'react'
 import { Capacitor } from '@capacitor/core';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { toast } from 'sonner';
+import { errorMessage } from '@/lib/errors';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { copy } from '@/lib/copy';
 import { ThemeContext, type ThemePreference } from './theme-context';
@@ -33,7 +34,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       if (Capacitor.isNativePlatform()) {
         void StatusBar.setStyle({ style: isDark ? Style.Dark : Style.Light }).catch((error: unknown) => {
           toast.error(copy.nativeStatusBarError, {
-            description: error instanceof Error ? error.message : String(error),
+            description: errorMessage(error),
           });
         });
       }
@@ -54,7 +55,7 @@ export function ThemeProvider({ children }: PropsWithChildren) {
       window.localStorage.setItem(storageKey, nextTheme);
     } catch (error) {
       toast.error(copy.themePersistenceError, {
-        description: error instanceof Error ? error.message : String(error),
+        description: errorMessage(error),
       });
     }
   }, []);

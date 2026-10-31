@@ -17,6 +17,7 @@ import { deleteReceipt, getTemporaryReceiptUrl, uploadReceipt } from '@/features
 import { validateReceiptFile } from '@/features/receipts/receipt-validation';
 import type { Database } from '@/lib/supabase/types';
 import { supabase } from '@/lib/supabase/client';
+import { errorMessage } from '@/lib/errors';
 import type { AppShellContext } from '@/app/AppShell';
 import { ItemFormFields } from './ItemFormFields';
 import { itemFormSchema, type ItemFormInput, type ItemFormOutput } from './item-schemas';
@@ -220,7 +221,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
     } catch (error) {
       newWindow.close();
       toast.error(copy.receiptOpenError, {
-        description: error instanceof Error ? error.message : undefined,
+        description: errorMessage(error),
       });
     }
   }
@@ -250,7 +251,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
         }
       }
       toast.error(copy.receiptReplaceError, {
-        description: error instanceof Error ? error.message : copy.receiptReplaceUploadError,
+        description: errorMessage(error),
       });
       return;
     } finally {
@@ -281,7 +282,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
       if (error) throw error;
     } catch (error) {
       toast.error(copy.itemDeleteError, {
-        description: error instanceof Error ? error.message : undefined,
+        description: errorMessage(error),
       });
       setIsDeleting(false);
       return;
@@ -323,7 +324,7 @@ function ItemDetail({ item, onChanged }: { item: Item; onChanged: () => Promise<
       toast.success(result === 'shared' ? copy.claimPackShared : copy.claimPackDownloaded);
     } catch (error) {
       toast.error(copy.claimPackGenerationError, {
-        description: error instanceof Error ? error.message : undefined,
+        description: errorMessage(error),
       });
     } finally {
       setIsGeneratingClaimPack(false);
@@ -536,7 +537,7 @@ function EditItemSheet({
       if (error) throw error;
     } catch (error) {
       toast.error(copy.itemUpdateError, {
-        description: error instanceof Error ? error.message : copy.itemUpdateError,
+        description: errorMessage(error),
       });
       setIsSaving(false);
       return;
@@ -603,7 +604,7 @@ export function ItemsPage() {
   useEffect(() => {
     if (itemsQuery.isError) {
       toast.error(copy.itemLoadError, {
-        description: itemsQuery.error instanceof Error ? itemsQuery.error.message : undefined,
+        description: errorMessage(itemsQuery.error),
       });
     }
   }, [itemsQuery.error, itemsQuery.isError]);
